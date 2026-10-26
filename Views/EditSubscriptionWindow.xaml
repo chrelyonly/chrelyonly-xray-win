@@ -5,7 +5,6 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        Topmost="True"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
