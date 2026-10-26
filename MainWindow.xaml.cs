@@ -3,6 +3,7 @@ using System.Windows.Input;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.ViewModels;
 using chrelyonly_xray_win.Views;
+using MessageBox = System.Windows.MessageBox;
 
 namespace chrelyonly_xray_win;
 
@@ -73,21 +74,39 @@ public partial class MainWindow : Window
         };
 
         var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-        contextMenu.Items.Add("显示主面板", null, (s, args) =>
+        contextMenu.Items.Add("打开面板喵~", null, (s, args) =>
         {
             Show();
             WindowState = WindowState.Normal;
             Activate();
         });
-        contextMenu.Items.Add("退出程序", null, (s, args) =>
+        contextMenu.Items.Add("退出程序喵~", null, (s, args) =>
         {
-            if (_notifyIcon != null)
-            {
-                _notifyIcon.Visible = false;
-                _notifyIcon.Dispose();
-            }
             _isActuallyExiting = true;
-            System.Windows.Application.Current.Shutdown();
+
+            try
+            {
+                Services.AppLogger.LogSystem("[程序退出] 正在停止 Xray 内核...");
+
+                // 使用当前 ViewModel 持有的核心管理器停止内核
+                ViewModel.StopXrayCore();
+            }
+            catch (Exception ex)
+            {
+                Services.AppLogger.LogSystem(
+                    $"[程序退出] 停止 Xray 内核失败：{ex.Message}");
+            }
+            finally
+            {
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
+                    _notifyIcon = null;
+                }
+
+                System.Windows.Application.Current.Shutdown();
+            }
         });
 
         _notifyIcon.ContextMenuStrip = contextMenu;
@@ -142,14 +161,63 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        base.OnClosed(e);
-        if (_notifyIcon != null)
+        try
         {
-            _notifyIcon.Visible = false;
-            _notifyIcon.Dispose();
+            // 这里调用你项目中实际的 Xray 停止方法
+            ViewModel.StopXrayCore();
+        }
+        catch (Exception ex)
+        {
+            Services.AppLogger.LogSystem(
+                $"[程序退出] 关闭窗口时停止 Xray 失败：{ex.Message}");
+        }
+        finally
+        {
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+                _notifyIcon = null;
+            }
+
+            base.OnClosed(e);
         }
     }
 
+
+    private void AiCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement element)
+            return;
+        string platform = element.Tag?.ToString() ?? string.Empty;
+        switch (platform)
+        {
+            case "OpenAI":
+                break;
+
+            case "Claude":
+                break;
+
+            case "Gemini":
+                break;
+
+            case "youtube":
+                break;
+
+            case "google":
+                break;
+            default:
+                break;
+        }
+        e.Handled = true;
+    }
+    
+    
+    
+    
+    
+    
+    
     private void ShowAddSubscriptionDialog()
     {
         ViewModel.IsModalOpen = true;

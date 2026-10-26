@@ -160,7 +160,6 @@
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
                                     <TextBlock Text="{Binding SelectedServer.LatencyDisplay}" FontSize="16" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Right"/>
-                                    <Button Command="{Binding SelectTabCommand}" CommandParameter="1" Content="切换节点 >" FontSize="12" FontWeight="Bold" Foreground="#2563EB" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -170,22 +169,49 @@
                             <StackPanel>
                                 <TextBlock Text="AI 访问解锁检测" FontSize="13" Foreground="#6B7280" Margin="0,0,0,12"/>
                                 <UniformGrid Columns="3">
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,6,0">
+                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,6,0"
+                                            Tag="OpenAI"
+                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
+                                            >
                                         <StackPanel HorizontalAlignment="Center">
                                             <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
                                             <TextBlock Text="OpenAI" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="3,0,3,0">
+                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="3,0,3,0"
+                                            Tag="Claude"
+                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
+                                    >
                                         <StackPanel HorizontalAlignment="Center">
                                             <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
                                             <TextBlock Text="Claude" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0">
+                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
+                                            Tag="Gemini"
+                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
+                                    >
                                         <StackPanel HorizontalAlignment="Center">
                                             <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
                                             <TextBlock Text="Gemini" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
+                                            Tag="youtube"
+                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
+                                    >
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="youtube" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
+                                            Tag="google"
+                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
+                                    >
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="google" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </UniformGrid>
