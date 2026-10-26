@@ -1,7 +1,7 @@
 【Xray 底层二进制程序目录】
 
 请在此文件夹下放置 Xray 内核文件：
-- xray.exe       (Xray 可执行二进制文件)
+- xraylib.exe       (Xray 可执行二进制文件)
 - geoip.dat      (GeoIP 数据库)
 - geosite.dat    (GeoSite 数据库)
 

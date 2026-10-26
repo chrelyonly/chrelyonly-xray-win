@@ -145,8 +145,8 @@ public class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
-        // Load persisted data (No mock/test data)
-        var savedData = StorageService.Load();
+        // Load persisted data using SqliteStorageService
+        var savedData = Task.Run(() => SqliteStorageService.LoadAsync()).GetAwaiter().GetResult();
         foreach (var sub in savedData.Subscriptions)
         {
             Subscriptions.Add(sub);
@@ -288,7 +288,7 @@ public class MainViewModel : ViewModelBase
                 if (!success)
                 {
                     AppLogger.LogSystem("[主控逻辑] 错误：Xray 核心启动失败。");
-                    new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xray.exe 是否存在。", false).ShowDialog();
+                    new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xraylib.exe 是否存在。", false).ShowDialog();
                     return;
                 }
             }
@@ -328,7 +328,7 @@ public class MainViewModel : ViewModelBase
 
     public void SaveState()
     {
-        StorageService.Save(Subscriptions, Servers, SelectedServer?.Id);
+        _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id);
     }
 
     public void StopXrayCore()

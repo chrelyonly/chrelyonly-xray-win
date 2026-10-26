@@ -9,7 +9,7 @@ public class XrayCoreManager
     private Process? _xrayProcess;
 
     public string CoreFolderPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Core");
-    public string XrayExePath => Path.Combine(CoreFolderPath, "xray.exe");
+    public string XrayExePath => Path.Combine(CoreFolderPath, "xraylib.exe");
     public string ConfigPath => Path.Combine(CoreFolderPath, "config.json");
     public string LogFilePath => Path.Combine(CoreFolderPath, "xray.log");
 
@@ -115,7 +115,7 @@ public class XrayCoreManager
 
             if (!File.Exists(XrayExePath))
             {
-                AppLogger.LogSystem($"[XRAY核心] 错误：未在指定路径找到 xray.exe，路径: {XrayExePath}");
+                AppLogger.LogSystem($"[XRAY核心] 错误：未在指定路径找到 xraylib.exe，路径: {XrayExePath}");
                 return false;
             }
 

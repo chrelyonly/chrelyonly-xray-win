@@ -18,6 +18,7 @@
         </None>
         <!-- UI 图片与 Icon 资源 -->
         <Resource Include="Assets\**\*" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     </ItemGroup>
 
 </Project>
