@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using chrelyonly_xray_win.Models;
@@ -6,19 +7,56 @@ namespace chrelyonly_xray_win.Services;
 
 public static class SubscriptionService
 {
-    private static readonly HttpClient HttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+    private static readonly HttpClient HttpClient;
+
+    static SubscriptionService()
+    {
+        HttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        // 许多订阅服务器会拒绝默认的 .NET UA，必须携带合法的 User-Agent
+        try
+        {
+            HttpClient.DefaultRequestHeaders.Add("User-Agent", "chrelyonly-xray-win/1.0 (v2rayN/Clash)");
+        }
+        catch { }
+    }
 
     public static async Task<List<ServerNode>> FetchSubscriptionNodesAsync(string subscriptionUrl)
     {
         var result = new List<ServerNode>();
-        if (string.IsNullOrWhiteSpace(subscriptionUrl)) return result;
+        if (string.IsNullOrWhiteSpace(subscriptionUrl))
+        {
+            Debug.WriteLine("[订阅解析] 错误：订阅地址为空。");
+            return result;
+        }
 
         try
         {
-            var content = await HttpClient.GetStringAsync(subscriptionUrl);
+            Debug.WriteLine($"[订阅解析] 正在向订阅服务器发起 HTTP 请求: {subscriptionUrl}");
+            var response = await HttpClient.GetAsync(subscriptionUrl);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Debug.WriteLine($"[订阅解析] 错误：HTTP 请求失败，状态码: {(int)response.StatusCode} {response.ReasonPhrase}");
+                throw new HttpRequestException($"服务器返回错误状态码: {(int)response.StatusCode} {response.ReasonPhrase}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"[订阅解析] HTTP 请求成功，获取到原始内容长度: {content.Length} 字符");
+
             var decodedContent = TryDecodeBase64(content.Trim());
+            if (decodedContent != content.Trim())
+            {
+                Debug.WriteLine("[订阅解析] 成功检测并解码 Base64 订阅内容。");
+            }
+            else
+            {
+                Debug.WriteLine("[订阅解析] 内容为明文（非 Base64 或解码跳过），按普通文本解析。");
+            }
 
             var lines = decodedContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            Debug.WriteLine($"[订阅解析] 按行分割完成，总行数: {lines.Length}");
+
+            int parsedCount = 0;
             foreach (var line in lines)
             {
                 var trimmed = line.Trim();
@@ -28,12 +66,20 @@ public static class SubscriptionService
                 if (node != null)
                 {
                     result.Add(node);
+                    parsedCount++;
+                }
+                else
+                {
+                    Debug.WriteLine($"[订阅解析] 警告：无法解析的分享链接片段: {(trimmed.Length > 30 ? trimmed.Substring(0, 30) + "..." : trimmed)}");
                 }
             }
+
+            Debug.WriteLine($"[订阅解析] 解析完成！成功提取到 {parsedCount} 个有效节点。");
         }
-        catch
+        catch (Exception ex)
         {
-            // Network or parse error fallback
+            Debug.WriteLine($"[订阅解析] 异常：抓取或解析订阅失败。原因: {ex.Message}");
+            throw; // 向上抛出异常以便弹窗展示具体错误
         }
 
         return result;
@@ -43,7 +89,6 @@ public static class SubscriptionService
     {
         try
         {
-            // Handle URL-safe base64 padding
             string padded = input.Replace('-', '+').Replace('_', '/');
             switch (padded.Length % 4)
             {
@@ -55,7 +100,6 @@ public static class SubscriptionService
         }
         catch
         {
-            // Not base64, return original input
             return input;
         }
     }

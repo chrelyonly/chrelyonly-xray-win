@@ -10,6 +10,7 @@ public class SubscriptionItem : ViewModelBase
     private int _nodeCount = 0;
     private DateTime? _lastUpdated;
     private bool _autoUpdate = true;
+    private bool _isUpdating = false;
 
     public string Id
     {
@@ -51,6 +52,12 @@ public class SubscriptionItem : ViewModelBase
     {
         get => _autoUpdate;
         set => SetProperty(ref _autoUpdate, value);
+    }
+
+    public bool IsUpdating
+    {
+        get => _isUpdating;
+        set => SetProperty(ref _isUpdating, value);
     }
 
     public string LastUpdatedDisplay => LastUpdated.HasValue

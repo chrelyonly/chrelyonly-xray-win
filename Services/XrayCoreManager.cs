@@ -17,6 +17,7 @@ public class XrayCoreManager
 
     public string GenerateClientConfig(ServerNode node)
     {
+        AppLogger.LogSystem($"[XRAY核心] 正在为节点「{node.Name}」({node.Address}:{node.Port}, 协议: {node.Protocol}) 生成客户端配置...");
         string uuid = string.IsNullOrEmpty(node.Uuid) ? "d342d11e-d424-4583-b36e-524abb1f0cf4" : node.Uuid;
         string address = node.Address;
         int port = node.Port;
@@ -28,7 +29,7 @@ public class XrayCoreManager
             protocol = "vless";
         }
 
-        return $@"{{
+        var configJson = $@"{{
   ""log"": {{
     ""loglevel"": ""warning""
   }},
@@ -97,25 +98,29 @@ public class XrayCoreManager
     }}
   ]
 }}";
+        AppLogger.LogSystem($"[XRAY核心] 客户端配置文件生成成功，路径: {ConfigPath}");
+        return configJson;
     }
 
     public bool StartCore(string configJson)
     {
         try
         {
+            AppLogger.LogSystem("[XRAY核心] 准备启动 Xray 内核服务...");
             if (!Directory.Exists(CoreFolderPath))
             {
                 Directory.CreateDirectory(CoreFolderPath);
+                AppLogger.LogSystem($"[XRAY核心] 创建 Core 目录: {CoreFolderPath}");
             }
 
             if (!File.Exists(XrayExePath))
             {
-                Debug.WriteLine("[XRAY] ERROR: xray.exe not found at " + XrayExePath);
+                AppLogger.LogSystem($"[XRAY核心] 错误：未在指定路径找到 xray.exe，路径: {XrayExePath}");
                 return false;
             }
 
             File.WriteAllText(ConfigPath, configJson);
-            Debug.WriteLine("[XRAY] Config written to " + ConfigPath);
+            AppLogger.LogSystem("[XRAY核心] config.json 写入成功。");
 
             StopCore();
 
@@ -133,12 +138,14 @@ public class XrayCoreManager
             _xrayProcess = Process.Start(startInfo);
             if (_xrayProcess != null)
             {
+                AppLogger.LogSystem($"[XRAY核心] Xray 进程已成功启动，PID: {_xrayProcess.Id}");
+
                 _xrayProcess.OutputDataReceived += (s, e) =>
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        string logLine = $"[{DateTime.Now:HH:mm:ss}][OUT] {e.Data}";
-                        Debug.WriteLine(logLine);
+                        string logLine = $"[OUT] {e.Data}";
+                        AppLogger.LogCore(logLine);
                         AppendLogFile(logLine);
                     }
                 };
@@ -147,22 +154,22 @@ public class XrayCoreManager
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        string logLine = $"[{DateTime.Now:HH:mm:ss}][ERR] {e.Data}";
-                        Debug.WriteLine(logLine);
+                        string logLine = $"[ERR] {e.Data}";
+                        AppLogger.LogCore(logLine);
                         AppendLogFile(logLine);
                     }
                 };
 
                 _xrayProcess.BeginOutputReadLine();
                 _xrayProcess.BeginErrorReadLine();
-                Debug.WriteLine("[XRAY] Core started successfully.");
                 return true;
             }
+            AppLogger.LogSystem("[XRAY核心] 错误：Process.Start 返回 null，未能启动内核进程。");
             return false;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("[XRAY] StartCore Exception: " + ex.Message);
+            AppLogger.LogSystem($"[XRAY核心] 启动核心发生异常: {ex.Message}");
             return false;
         }
     }
@@ -173,19 +180,23 @@ public class XrayCoreManager
         {
             if (_xrayProcess != null)
             {
-                Debug.WriteLine("[XRAY] Stopping core process...");
+                AppLogger.LogSystem("[XRAY核心] 正在停止 Xray 内核进程及子进程树...");
                 if (!_xrayProcess.HasExited)
                 {
                     _xrayProcess.Kill(true);
                 }
                 _xrayProcess.Dispose();
                 _xrayProcess = null;
-                Debug.WriteLine("[XRAY] Core stopped.");
+                AppLogger.LogSystem("[XRAY核心] Xray 内核进程已安全停止。");
+            }
+            else
+            {
+                AppLogger.LogSystem("[XRAY核心] 停止忽略：当前没有运行中的 Xray 进程。");
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("[XRAY] StopCore Exception: " + ex.Message);
+            AppLogger.LogSystem($"[XRAY核心] 停止核心发生异常: {ex.Message}");
         }
     }
 
@@ -198,12 +209,12 @@ public class XrayCoreManager
                 if (File.Exists(LogFilePath))
                 {
                     var fi = new FileInfo(LogFilePath);
-                    if (fi.Length > 5 * 1024 * 1024) // 5 MB size limit to prevent disk overflow
+                    if (fi.Length > 5 * 1024 * 1024) // 5 MB size limit
                     {
                         File.WriteAllText(LogFilePath, "");
                     }
                 }
-                File.AppendAllText(LogFilePath, line + Environment.NewLine);
+                File.AppendAllText(LogFilePath, $"[{DateTime.Now:HH:mm:ss}] {line}" + Environment.NewLine);
             }
         }
         catch { }

@@ -20,6 +20,26 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += OnWindowLoaded;
         InitNotifyIcon();
+        InitLogAutoScroll();
+    }
+
+    private void InitLogAutoScroll()
+    {
+        Services.AppLogger.SystemLogLines.CollectionChanged += (s, e) =>
+        {
+            if (ViewModel?.IsAutoScrollEnabled == true && ViewModel.IsLogsTabSelected)
+            {
+                SystemLogScrollViewer?.ScrollToEnd();
+            }
+        };
+
+        Services.AppLogger.CoreLogLines.CollectionChanged += (s, e) =>
+        {
+            if (ViewModel?.IsAutoScrollEnabled == true && ViewModel.IsLogsTabSelected)
+            {
+                CoreLogScrollViewer?.ScrollToEnd();
+            }
+        };
     }
 
     private void InitNotifyIcon()
@@ -53,13 +73,13 @@ public partial class MainWindow : Window
         };
 
         var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-        contextMenu.Items.Add("打开程序喵~", null, (s, args) =>
+        contextMenu.Items.Add("显示主面板", null, (s, args) =>
         {
             Show();
             WindowState = WindowState.Normal;
             Activate();
         });
-        contextMenu.Items.Add("退出程序喵~", null, (s, args) =>
+        contextMenu.Items.Add("退出程序", null, (s, args) =>
         {
             if (_notifyIcon != null)
             {
@@ -155,11 +175,6 @@ public partial class MainWindow : Window
         {
             ViewModel.IsModalOpen = false;
         }
-    }
-
-    private void ShowEditSubscriptionWindow(SubscriptionItem item)
-    {
-        // ...
     }
 
     private void ShowEditSubscriptionDialog(SubscriptionItem item)

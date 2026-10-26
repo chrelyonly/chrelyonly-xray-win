@@ -6,9 +6,9 @@ namespace chrelyonly_xray_win.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    private int _selectedTabIndex = 0; // 0: 首页, 1: 节点, 2: 订阅
+    private int _selectedTabIndex = 0; // 0: 首页, 1: 节点, 2: 订阅, 3: 日志
     private ServerNode? _selectedServer;
-    private bool _isConnected = true;
+    private bool _isConnected = false;
 
     private readonly XrayCoreManager _xrayManager = new();
 
@@ -20,6 +20,32 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<ServerNode> Servers { get; } = new();
 
     public ObservableCollection<SubscriptionItem> Subscriptions { get; } = new();
+
+    public ObservableCollection<string> SystemLogLines => AppLogger.SystemLogLines;
+    public ObservableCollection<string> CoreLogLines => AppLogger.CoreLogLines;
+
+    public bool IsLoggingEnabled
+    {
+        get => AppLogger.IsLoggingEnabled;
+        set
+        {
+            if (AppLogger.IsLoggingEnabled != value)
+            {
+                AppLogger.IsLoggingEnabled = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LoggingStatusText));
+            }
+        }
+    }
+
+    public string LoggingStatusText => IsLoggingEnabled ? "暂停收集" : "恢复收集";
+
+    private bool _isAutoScrollEnabled = true;
+    public bool IsAutoScrollEnabled
+    {
+        get => _isAutoScrollEnabled;
+        set => SetProperty(ref _isAutoScrollEnabled, value);
+    }
 
     public bool IsModalOpen
     {
@@ -37,6 +63,7 @@ public class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsHomeTabSelected));
                 OnPropertyChanged(nameof(IsNodesTabSelected));
                 OnPropertyChanged(nameof(IsSubscriptionsTabSelected));
+                OnPropertyChanged(nameof(IsLogsTabSelected));
             }
         }
     }
@@ -44,11 +71,18 @@ public class MainViewModel : ViewModelBase
     public bool IsHomeTabSelected => SelectedTabIndex == 0;
     public bool IsNodesTabSelected => SelectedTabIndex == 1;
     public bool IsSubscriptionsTabSelected => SelectedTabIndex == 2;
+    public bool IsLogsTabSelected => SelectedTabIndex == 3;
 
     public ServerNode? SelectedServer
     {
         get => _selectedServer;
-        set => SetProperty(ref _selectedServer, value);
+        set
+        {
+            if (SetProperty(ref _selectedServer, value))
+            {
+                SaveState();
+            }
+        }
     }
 
     public bool IsConnected
@@ -60,6 +94,7 @@ public class MainViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(ConnectStatusTitle));
                 OnPropertyChanged(nameof(ConnectStatusSubtitle));
+                NotifyXrayStatusChanged();
                 if (SelectedServer != null)
                 {
                     SelectedServer.IsConnected = value;
@@ -67,6 +102,10 @@ public class MainViewModel : ViewModelBase
             }
         }
     }
+
+    public bool IsXrayRunning => _xrayManager.IsRunning;
+    public string XrayStatusText => IsXrayRunning ? "Xray 内核状态: 运行中 (Active)" : "Xray 内核状态: 未运行 (Stopped)";
+    public string XrayStatusColor => IsXrayRunning ? "#10B981" : "#EF4444";
 
     public SubscriptionItem? SelectedSubscription
     {
@@ -93,6 +132,9 @@ public class MainViewModel : ViewModelBase
     public RelayCommand ToggleConnectionCommand { get; }
     public RelayCommand RefreshLatencyCommand { get; }
     public RelayCommand SelectNodeCommand { get; }
+    public RelayCommand ToggleLoggingCommand { get; }
+    public RelayCommand ClearSystemLogsCommand { get; }
+    public RelayCommand ClearCoreLogsCommand { get; }
 
     // Subscription Dialog Commands
     public RelayCommand AddSubDialogCommand { get; }
@@ -102,33 +144,31 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        // Seed initial mock nodes
-        var sg1 = new ServerNode { Name = "新加坡1", Address = "x66x66.ly123.edu.kg", Port = 443, Protocol = "VLESS", Security = "Reality", Transport = "TCP", LatencyMs = 85 };
-        var sg2 = new ServerNode { Name = "新加坡2原生iP", Address = "x66x11.ly123.edu.kg", Port = 443, Protocol = "VLESS", Security = "Reality", Transport = "TCP", IsConnected = true, LatencyMs = 62 };
-        var sg3 = new ServerNode { Name = "新加坡3", Address = "x66x69.ly123.edu.kg", Port = 11881, Protocol = "VLESS", Security = "Reality", Transport = "TCP", LatencyMs = 92 };
-        var sg6 = new ServerNode { Name = "新加坡6IPv6", Address = "xjpv6.ly123.edu.kg", Port = 64830, Protocol = "VMess", Security = "TLS", Transport = "WebSocket", LatencyMs = 120 };
-        var jp3 = new ServerNode { Name = "日本3", Address = "r-lr2.ly123.edu.kg", Port = 443, Protocol = "VLESS", Security = "Reality", Transport = "TCP", LatencyMs = 45 };
-        var jp2 = new ServerNode { Name = "日本2", Address = "r-lr2-r2.ly123.edu.kg", Port = 443, Protocol = "VLESS", Security = "Reality", Transport = "TCP", LatencyMs = 48 };
-
-        Servers.Add(sg1);
-        Servers.Add(sg2);
-        Servers.Add(sg3);
-        Servers.Add(sg6);
-        Servers.Add(jp3);
-        Servers.Add(jp2);
-
-        SelectedServer = sg2;
-
-        // Seed initial subscription
-        var defaultSub = new SubscriptionItem
+        AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
+        // Load persisted data (No mock/test data)
+        var savedData = StorageService.Load();
+        foreach (var sub in savedData.Subscriptions)
         {
-            Name = "常用节点订阅",
-            Url = "https://sub.ly123.edu.kg/api/v1/client/subscribe?token=demo123",
-            NodeCount = 6,
-            LastUpdated = DateTime.Now.AddHours(-2)
-        };
-        Subscriptions.Add(defaultSub);
-        SelectedSubscription = defaultSub;
+            Subscriptions.Add(sub);
+        }
+        foreach (var srv in savedData.CachedServers)
+        {
+            Servers.Add(srv);
+        }
+
+        if (!string.IsNullOrEmpty(savedData.SelectedServerId))
+        {
+            SelectedServer = Servers.FirstOrDefault(s => s.Id == savedData.SelectedServerId);
+        }
+        if (SelectedServer == null && Servers.Count > 0)
+        {
+            SelectedServer = Servers[0];
+        }
+
+        if (Subscriptions.Count > 0)
+        {
+            SelectedSubscription = Subscriptions[0];
+        }
 
         // Commands
         SelectTabCommand = new RelayCommand(obj =>
@@ -136,15 +176,36 @@ public class MainViewModel : ViewModelBase
             if (obj != null && int.TryParse(obj.ToString(), out int tabIndex))
             {
                 SelectedTabIndex = tabIndex;
+                AppLogger.LogSystem($"[主控逻辑] 切换至 Tab 页面索引: {tabIndex}");
             }
         });
 
         ToggleConnectionCommand = new RelayCommand(ToggleConnection);
         RefreshLatencyCommand = new RelayCommand(async () => await RefreshCurrentLatencyAsync());
+
+        ToggleLoggingCommand = new RelayCommand(() =>
+        {
+            IsLoggingEnabled = !IsLoggingEnabled;
+            AppLogger.LogSystem(IsLoggingEnabled ? "[主控逻辑] 用户已恢复系统与内核日志收集。" : "[主控逻辑] 用户已暂停日志收集（高性能模式）。");
+        });
+
+        ClearSystemLogsCommand = new RelayCommand(() =>
+        {
+            AppLogger.SystemLogLines.Clear();
+            AppLogger.LogSystem("[主控逻辑] 用户已清空系统日志。");
+        });
+
+        ClearCoreLogsCommand = new RelayCommand(() =>
+        {
+            AppLogger.CoreLogLines.Clear();
+            AppLogger.LogSystem("[主控逻辑] 用户已清空内核日志。");
+        });
+
         SelectNodeCommand = new RelayCommand(obj =>
         {
             if (obj is ServerNode node)
             {
+                AppLogger.LogSystem($"[主控逻辑] 用户切换选中节点: {node.Name} ({node.Address}:{node.Port}, 协议: {node.Protocol})");
                 SelectedServer = node;
                 foreach (var item in Servers)
                 {
@@ -155,9 +216,12 @@ public class MainViewModel : ViewModelBase
                 // If currently connected, restart core with new node config
                 if (IsConnected)
                 {
+                    AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在热重启 Xray 内核应用新节点配置...");
                     string configJson = _xrayManager.GenerateClientConfig(node);
                     _xrayManager.StartCore(configJson);
+                    NotifyXrayStatusChanged();
                 }
+                SaveState();
             }
         });
 
@@ -183,36 +247,62 @@ public class MainViewModel : ViewModelBase
             var target = obj as SubscriptionItem ?? SelectedSubscription;
             if (target != null)
             {
-                await UpdateSubscriptionItemAsync(target);
+                await UpdateSubscriptionItemAsync(target, showAlert: true);
             }
         });
 
-        // Initial start if connected by default
-        if (IsConnected && SelectedServer != null)
+        // 默认打开时自动在后台静默更新订阅
+        _ = Task.Run(async () =>
         {
-            string configJson = _xrayManager.GenerateClientConfig(SelectedServer);
-            _xrayManager.StartCore(configJson);
-        }
+            await Task.Delay(1500); // 延迟 1.5 秒等待主窗口完全初始化
+            foreach (var sub in Subscriptions.ToList())
+            {
+                if (sub.AutoUpdate)
+                {
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                    {
+                        await UpdateSubscriptionItemAsync(sub, showAlert: false);
+                    });
+                }
+            }
+        });
     }
 
     private void ToggleConnection()
     {
         bool willBeConnected = !IsConnected;
+        AppLogger.LogSystem($"[主控逻辑] 触发连接开关，目标连接状态: {willBeConnected}");
         if (willBeConnected)
         {
             if (SelectedServer == null)
             {
                 SelectedServer = Servers.FirstOrDefault();
+                AppLogger.LogSystem("[主控逻辑] 提示：当前未选中任何节点，已自动选择列表首个节点。");
             }
 
             if (SelectedServer != null)
             {
+                AppLogger.LogSystem($"[主控逻辑] 正在使用节点启动代理: {SelectedServer.Name}");
                 string configJson = _xrayManager.GenerateClientConfig(SelectedServer);
-                _xrayManager.StartCore(configJson);
+                bool success = _xrayManager.StartCore(configJson);
+                if (!success)
+                {
+                    AppLogger.LogSystem("[主控逻辑] 错误：Xray 核心启动失败。");
+                    new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xray.exe 是否存在。", false).ShowDialog();
+                    return;
+                }
+            }
+            else
+            {
+                AppLogger.LogSystem("[主控逻辑] 提示：节点列表为空，无法启动代理。");
+                new Views.AlertWindow("提示", "请先在节点列表中选择或添加一个服务器节点。", false).ShowDialog();
+                SelectedTabIndex = 1; // Switch to nodes tab
+                return;
             }
         }
         else
         {
+            AppLogger.LogSystem("[主控逻辑] 正在关闭代理，停止 Xray 核心...");
             _xrayManager.StopCore();
         }
 
@@ -225,6 +315,20 @@ public class MainViewModel : ViewModelBase
             }
             SelectedServer.IsConnected = IsConnected;
         }
+        NotifyXrayStatusChanged();
+        SaveState();
+    }
+
+    private void NotifyXrayStatusChanged()
+    {
+        OnPropertyChanged(nameof(IsXrayRunning));
+        OnPropertyChanged(nameof(XrayStatusText));
+        OnPropertyChanged(nameof(XrayStatusColor));
+    }
+
+    public void SaveState()
+    {
+        StorageService.Save(Subscriptions, Servers, SelectedServer?.Id);
     }
 
     public void StopXrayCore()
@@ -241,22 +345,49 @@ public class MainViewModel : ViewModelBase
         SelectedServer.LatencyMs = ms > 0 ? ms : (new Random().Next(40, 95));
     }
 
-    public async Task UpdateSubscriptionItemAsync(SubscriptionItem item)
+    public async Task UpdateSubscriptionItemAsync(SubscriptionItem item, bool showAlert = true)
     {
+        AppLogger.LogSystem($"[订阅逻辑] 开始更新订阅: {item.Name} (URL: {item.Url})");
+        item.IsUpdating = true;
         IsSubUpdating = true;
         try
         {
             var fetchedNodes = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url);
-            item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : (new Random().Next(4, 12));
+            AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点。");
+            item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : 0;
             item.LastUpdated = DateTime.Now;
 
             foreach (var node in fetchedNodes)
             {
-                Servers.Add(node);
+                if (!Servers.Any(s => s.Address == node.Address && s.Port == node.Port))
+                {
+                    Servers.Add(node);
+                }
+            }
+
+            if (SelectedServer == null && Servers.Count > 0)
+            {
+                SelectedServer = Servers[0];
+            }
+
+            SaveState();
+
+            if (showAlert)
+            {
+                new Views.AlertWindow("订阅更新", $"更新订阅成功！当前订阅包含 {fetchedNodes.Count} 个可用节点。", true).ShowDialog();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[订阅逻辑] 更新订阅发生异常: {ex.Message}");
+            if (showAlert)
+            {
+                new Views.AlertWindow("订阅更新失败", $"更新订阅失败，请检查网络或订阅地址是否正确。\n错误信息: {ex.Message}", false).ShowDialog();
             }
         }
         finally
         {
+            item.IsUpdating = false;
             IsSubUpdating = false;
         }
     }

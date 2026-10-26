@@ -9,6 +9,13 @@ public partial class ConfirmWindow : Window
         InitializeComponent();
         TxtTitle.Text = title;
         TxtMessage.Text = message;
+
+        Loaded += (s, e) =>
+        {
+            Activate();
+            Topmost = true;
+            Focus();
+        };
     }
 
     private void OnConfirmClick(object sender, RoutedEventArgs e)
