@@ -195,7 +195,10 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,12"/>
+                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827"/>
+                        <TextBlock Text="提示：左键选中，右键点击切换节点" FontSize="11" Foreground="#9CA3AF" Margin="0,2,0,0"/>
+                    </StackPanel>
 
                     <!-- Search Input Box -->
                     <Grid Grid.Row="1" Margin="0,0,0,12">
@@ -245,7 +248,7 @@
                             <DataTemplate>
                                 <Grid>
                                     <Grid.InputBindings>
-                                        <MouseBinding MouseAction="LeftClick"
+                                        <MouseBinding MouseAction="RightClick"
                                                       Command="{Binding DataContext.SelectNodeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                       CommandParameter="{Binding}"/>
                                     </Grid.InputBindings>
