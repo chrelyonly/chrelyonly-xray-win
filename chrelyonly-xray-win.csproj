@@ -9,4 +9,13 @@
         <UseWPF>true</UseWPF>
     </PropertyGroup>
 
+    <ItemGroup>
+        <!-- Xray 内核可执行程序及规则库文件自动复制到输出目录 -->
+        <None Update="Core\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <!-- UI 图片与 Icon 资源 -->
+        <Resource Include="Assets\**\*" />
+    </ItemGroup>
+
 </Project>
