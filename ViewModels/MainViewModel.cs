@@ -10,6 +10,8 @@ public class MainViewModel : ViewModelBase
     private ServerNode? _selectedServer;
     private bool _isConnected = true;
 
+    private readonly XrayCoreManager _xrayManager = new();
+
     // Subscription Selected Field
     private SubscriptionItem? _selectedSubscription;
     private bool _isSubUpdating = false;
@@ -48,8 +50,6 @@ public class MainViewModel : ViewModelBase
         get => _selectedServer;
         set => SetProperty(ref _selectedServer, value);
     }
-
-
 
     public bool IsConnected
     {
@@ -151,6 +151,13 @@ public class MainViewModel : ViewModelBase
                     item.IsConnected = false;
                 }
                 node.IsConnected = IsConnected;
+
+                // If currently connected, restart core with new node config
+                if (IsConnected)
+                {
+                    string configJson = _xrayManager.GenerateClientConfig(node);
+                    _xrayManager.StartCore(configJson);
+                }
             }
         });
 
@@ -179,13 +186,37 @@ public class MainViewModel : ViewModelBase
                 await UpdateSubscriptionItemAsync(target);
             }
         });
+
+        // Initial start if connected by default
+        if (IsConnected && SelectedServer != null)
+        {
+            string configJson = _xrayManager.GenerateClientConfig(SelectedServer);
+            _xrayManager.StartCore(configJson);
+        }
     }
-
-
 
     private void ToggleConnection()
     {
-        IsConnected = !IsConnected;
+        bool willBeConnected = !IsConnected;
+        if (willBeConnected)
+        {
+            if (SelectedServer == null)
+            {
+                SelectedServer = Servers.FirstOrDefault();
+            }
+
+            if (SelectedServer != null)
+            {
+                string configJson = _xrayManager.GenerateClientConfig(SelectedServer);
+                _xrayManager.StartCore(configJson);
+            }
+        }
+        else
+        {
+            _xrayManager.StopCore();
+        }
+
+        IsConnected = willBeConnected;
         if (SelectedServer != null)
         {
             foreach (var node in Servers)
@@ -194,6 +225,11 @@ public class MainViewModel : ViewModelBase
             }
             SelectedServer.IsConnected = IsConnected;
         }
+    }
+
+    public void StopXrayCore()
+    {
+        _xrayManager.StopCore();
     }
 
     private async Task RefreshCurrentLatencyAsync()
