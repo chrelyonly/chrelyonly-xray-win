@@ -191,7 +191,6 @@
                 <Grid Visibility="{Binding IsNodesTabSelected, Converter={StaticResource BoolToVisConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -200,16 +199,9 @@
                         <TextBlock Text="提示：左键选中，右键点击切换节点" FontSize="11" Foreground="#9CA3AF" Margin="0,2,0,0"/>
                     </StackPanel>
 
-                    <!-- Search Input Box -->
-                    <Grid Grid.Row="1" Margin="0,0,0,12">
-                        <TextBox Style="{StaticResource SearchTextBoxStyle}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Path Data="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-                              Fill="#9CA3AF" Width="14" Height="14" HorizontalAlignment="Right" Margin="0,0,12,0" IsHitTestVisible="False"/>
-                    </Grid>
-
                     <!-- Nodes ListBox -->
-                    <ListBox Grid.Row="2"
-                             ItemsSource="{Binding FilteredServers}"
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Servers}"
                              SelectedItem="{Binding SelectedServer}"
                              Background="Transparent"
                              BorderThickness="0"

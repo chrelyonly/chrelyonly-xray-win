@@ -12,11 +12,65 @@ namespace chrelyonly_xray_win;
 public partial class MainWindow : Window
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
+    private System.Windows.Forms.NotifyIcon? _notifyIcon;
+    public bool _isActuallyExiting = false;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnWindowLoaded;
+        InitNotifyIcon();
+    }
+
+    private void InitNotifyIcon()
+    {
+        System.Drawing.Icon trayIcon = System.Drawing.SystemIcons.Application;
+        try
+        {
+            var iconStreamInfo = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/64x64.ico"));
+            if (iconStreamInfo != null)
+            {
+                trayIcon = new System.Drawing.Icon(iconStreamInfo.Stream);
+            }
+        }
+        catch
+        {
+            // Fallback to default system icon if loading fails
+        }
+
+        _notifyIcon = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = trayIcon,
+            Text = "代理控制台",
+            Visible = true // 始终在系统托盘显示
+        };
+
+        _notifyIcon.DoubleClick += (s, args) =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        };
+
+        var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+        contextMenu.Items.Add("打开程序喵~", null, (s, args) =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        });
+        contextMenu.Items.Add("退出程序喵~", null, (s, args) =>
+        {
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+            }
+            _isActuallyExiting = true;
+            System.Windows.Application.Current.Shutdown();
+        });
+
+        _notifyIcon.ContextMenuStrip = contextMenu;
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -36,12 +90,44 @@ public partial class MainWindow : Window
 
     private void OnMinimizeClick(object sender, RoutedEventArgs e)
     {
-        WindowState = WindowState.Minimized;
+        Hide();
     }
 
     private void OnCloseClick(object sender, RoutedEventArgs e)
     {
-        Close();
+        Hide();
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        if (WindowState == WindowState.Minimized)
+        {
+            Hide();
+        }
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_isActuallyExiting)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+        else
+        {
+            base.OnClosing(e);
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        if (_notifyIcon != null)
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+        }
     }
 
     private void ShowAddSubscriptionDialog()
@@ -69,6 +155,11 @@ public partial class MainWindow : Window
         {
             ViewModel.IsModalOpen = false;
         }
+    }
+
+    private void ShowEditSubscriptionWindow(SubscriptionItem item)
+    {
+        // ...
     }
 
     private void ShowEditSubscriptionDialog(SubscriptionItem item)

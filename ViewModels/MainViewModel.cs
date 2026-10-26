@@ -1,6 +1,4 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Windows.Data;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.Services;
 
@@ -10,7 +8,6 @@ public class MainViewModel : ViewModelBase
 {
     private int _selectedTabIndex = 0; // 0: 首页, 1: 节点, 2: 订阅
     private ServerNode? _selectedServer;
-    private string _searchText = "";
     private bool _isConnected = true;
 
     // Subscription Selected Field
@@ -19,7 +16,6 @@ public class MainViewModel : ViewModelBase
     private bool _isModalOpen = false;
 
     public ObservableCollection<ServerNode> Servers { get; } = new();
-    public ICollectionView FilteredServers { get; }
 
     public ObservableCollection<SubscriptionItem> Subscriptions { get; } = new();
 
@@ -53,17 +49,7 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _selectedServer, value);
     }
 
-    public string SearchText
-    {
-        get => _searchText;
-        set
-        {
-            if (SetProperty(ref _searchText, value))
-            {
-                FilteredServers.Refresh();
-            }
-        }
-    }
+
 
     public bool IsConnected
     {
@@ -133,9 +119,6 @@ public class MainViewModel : ViewModelBase
 
         SelectedServer = sg2;
 
-        FilteredServers = CollectionViewSource.GetDefaultView(Servers);
-        FilteredServers.Filter = FilterServerNode;
-
         // Seed initial subscription
         var defaultSub = new SubscriptionItem
         {
@@ -198,16 +181,7 @@ public class MainViewModel : ViewModelBase
         });
     }
 
-    private bool FilterServerNode(object item)
-    {
-        if (item is not ServerNode server) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-        var term = SearchText.Trim().ToLowerInvariant();
-        return server.Name.ToLowerInvariant().Contains(term) ||
-               server.Address.ToLowerInvariant().Contains(term) ||
-               server.Protocol.ToLowerInvariant().Contains(term);
-    }
 
     private void ToggleConnection()
     {

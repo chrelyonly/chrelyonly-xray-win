@@ -19,7 +19,7 @@ public partial class EditSubscriptionWindow : Window
     {
         if (string.IsNullOrWhiteSpace(TxtUrl.Text))
         {
-            MessageBox.Show("请输入有效的订阅地址 URL", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            System.Windows.MessageBox.Show("请输入有效的订阅地址 URL", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

@@ -7,6 +7,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
+        <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>Assets\64x64.ico</ApplicationIcon>
     </PropertyGroup>
 
