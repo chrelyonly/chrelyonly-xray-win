@@ -20,7 +20,7 @@ public static class SubscriptionService
         catch { }
     }
 
-    public static async Task<List<ServerNode>> FetchSubscriptionNodesAsync(string subscriptionUrl)
+    public static async Task<List<ServerNode>> FetchSubscriptionNodesAsync(string subscriptionUrl, bool useProxy = false)
     {
         var result = new List<ServerNode>();
         if (string.IsNullOrWhiteSpace(subscriptionUrl))
@@ -31,8 +31,24 @@ public static class SubscriptionService
 
         try
         {
-            Debug.WriteLine($"[订阅解析] 正在向订阅服务器发起 HTTP 请求: {subscriptionUrl}");
-            var response = await HttpClient.GetAsync(subscriptionUrl);
+            Debug.WriteLine($"[订阅解析] 正在向订阅服务器发起 HTTP 请求: {subscriptionUrl} (代理模式: {useProxy})");
+            HttpClient client = HttpClient;
+            if (useProxy)
+            {
+                var handler = new HttpClientHandler
+                {
+                    Proxy = new System.Net.WebProxy("127.0.0.1", 10809),
+                    UseProxy = true
+                };
+                client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+                try
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", "chrelyonly-xray-win/1.0 (v2rayN/Clash)");
+                }
+                catch { }
+            }
+
+            var response = await client.GetAsync(subscriptionUrl);
 
             if (!response.IsSuccessStatusCode)
             {

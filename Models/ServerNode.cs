@@ -5,6 +5,7 @@ namespace chrelyonly_xray_win.Models;
 public class ServerNode : ViewModelBase
 {
     private string _id = Guid.NewGuid().ToString();
+    private string _subscriptionId = "";
     private string _name = "新节点";
     private string _address = "127.0.0.1";
     private int _port = 443;
@@ -35,6 +36,12 @@ public class ServerNode : ViewModelBase
     {
         get => _id;
         set => SetProperty(ref _id, value);
+    }
+
+    public string SubscriptionId
+    {
+        get => _subscriptionId;
+        set => SetProperty(ref _subscriptionId, value);
     }
 
     public string Name

@@ -577,9 +577,19 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="订阅管理" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="使用代理更新节点" FontSize="12" Foreground="#4B5563" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                              IsChecked="{Binding IsUseProxyForSubUpdate}"
+                                              VerticalAlignment="Center"
+                                              ToolTip="开启后通过本地代理 (127.0.0.1:10809) 更新订阅节点"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
                                     Background="#2563EB" Foreground="#FFFFFF" Padding="14,8"
                                     FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
                         </Grid>

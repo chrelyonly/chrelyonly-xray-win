@@ -124,7 +124,30 @@ public partial class MainWindow : Window
             {
                 AnimateTabTransition(ViewModel.SelectedTabIndex);
             }
+            else if (args.PropertyName == nameof(ViewModel.IsConnected))
+            {
+                string msg = ViewModel.IsConnected ? "已成功建立安全代理连接" : "已安全断开代理连接";
+                ShowTrayNotification("代理状态提示", msg);
+            }
+            else if (args.PropertyName == nameof(ViewModel.IsSystemProxyEnabled))
+            {
+                ShowTrayNotification("系统代理提示", "代理状态改变了喵~🐱");
+            }
+            else if (args.PropertyName == nameof(ViewModel.IsXrayRunning))
+            {
+                string msg = ViewModel.IsXrayRunning ? "莓莓小助手启动喵~🐱" : "再见了喵~🐱";
+                ShowTrayNotification("Xray 内核提示", msg);
+            }
         };
+    }
+
+    public void ShowTrayNotification(string title, string message, System.Windows.Forms.ToolTipIcon icon = System.Windows.Forms.ToolTipIcon.Info)
+    {
+        try
+        {
+            _notifyIcon?.ShowBalloonTip(2500, title, message, icon);
+        }
+        catch { }
     }
 
     private int _previousTabIndex = 0;

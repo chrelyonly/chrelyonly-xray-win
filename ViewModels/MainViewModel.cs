@@ -14,7 +14,6 @@ public class MainViewModel : ViewModelBase
     private readonly XrayCoreManager _xrayManager = new();
 
     // Subscription Selected Field
-    private SubscriptionItem? _selectedSubscription;
     private bool _isSubUpdating = false;
     private bool _isModalOpen = false;
     private bool _isTestingAiUnlock = false;
@@ -65,10 +64,19 @@ public class MainViewModel : ViewModelBase
 
                 if (IsConnected && SelectedServer != null)
                 {
-                    AppLogger.LogSystem($"[局域网共享] 局域网共享已切换为: {value}，正在重新应用 Xray 监听地址配置...");
-                    string configJson = _xrayManager.GenerateClientConfig(SelectedServer, value, IsGlobalMode);
-                    _xrayManager.StartCore(configJson);
-                    NotifyXrayStatusChanged();
+                    AppLogger.LogSystem($"[局域网共享] 局域网共享已切换为: {value}，正在异步重新应用 Xray 监听地址配置...");
+                    var srv = SelectedServer;
+                    var lan = value;
+                    var global = IsGlobalMode;
+                    _ = Task.Run(() =>
+                    {
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        _xrayManager.StartCore(configJson);
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            NotifyXrayStatusChanged();
+                        });
+                    });
                 }
             }
         }
@@ -88,10 +96,19 @@ public class MainViewModel : ViewModelBase
 
                 if (IsConnected && SelectedServer != null)
                 {
-                    AppLogger.LogSystem($"[路由模式] 路由模式已变更为: {(value ? "全局代理" : "智能分流")}，正在热重启 Xray 内核应用路由配置...");
-                    string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, value);
-                    _xrayManager.StartCore(configJson);
-                    NotifyXrayStatusChanged();
+                    AppLogger.LogSystem($"[路由模式] 路由模式已变更为: {(value ? "全局代理" : "智能分流")}，正在异步热重启 Xray 内核应用路由配置...");
+                    var srv = SelectedServer;
+                    var lan = AllowLan;
+                    var global = value;
+                    _ = Task.Run(() =>
+                    {
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        _xrayManager.StartCore(configJson);
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            NotifyXrayStatusChanged();
+                        });
+                    });
                 }
             }
         }
@@ -233,10 +250,52 @@ public class MainViewModel : ViewModelBase
     public string SystemProxyStatusText => IsSystemProxyEnabled ? "系统代理状态: 已开启" : "系统代理状态: 已关闭";
     public string SystemProxyStatusColor => IsSystemProxyEnabled ? "#10B981" : "#6B7280";
 
+    private bool _isUseProxyForSubUpdate = false;
+    public bool IsUseProxyForSubUpdate
+    {
+        get => _isUseProxyForSubUpdate;
+        set
+        {
+            if (SetProperty(ref _isUseProxyForSubUpdate, value))
+            {
+                SaveState();
+                AppLogger.LogSystem($"[订阅配置] 使用代理更新订阅开关已更改为: {value}");
+            }
+        }
+    }
+
+    private bool _isInitializing = true;
+    private SubscriptionItem? _selectedSubscription;
+
     public SubscriptionItem? SelectedSubscription
     {
         get => _selectedSubscription;
-        set => SetProperty(ref _selectedSubscription, value);
+        set
+        {
+            if (_isInitializing)
+            {
+                AppLogger.LogSystem("[订阅逻辑] 提示：应用程序正在启动初始化中，暂时不允许切换订阅。");
+                return;
+            }
+            if (SetProperty(ref _selectedSubscription, value))
+            {
+                if (value != null)
+                {
+                    Servers.Clear();
+                    foreach (var node in value.Nodes)
+                    {
+                        Servers.Add(node);
+                    }
+                    AppLogger.LogSystem($"[订阅逻辑] 切换订阅源 -> {value.Name}，已加载 {value.Nodes.Count} 个节点。");
+
+                    if (SelectedServer == null || !Servers.Contains(SelectedServer))
+                    {
+                        SelectedServer = Servers.FirstOrDefault();
+                    }
+                }
+                SaveState();
+            }
+        }
     }
 
     public bool IsSubUpdating
@@ -292,23 +351,32 @@ public class MainViewModel : ViewModelBase
         {
             Subscriptions.Add(sub);
         }
-        foreach (var srv in savedData.CachedServers)
+
+        if (Subscriptions.Count > 0)
         {
-            Servers.Add(srv);
+            _selectedSubscription = Subscriptions[0];
+            Servers.Clear();
+            foreach (var node in _selectedSubscription.Nodes)
+            {
+                Servers.Add(node);
+            }
+        }
+
+        if (Servers.Count == 0 && savedData.CachedServers.Count > 0)
+        {
+            foreach (var srv in savedData.CachedServers)
+            {
+                if (Subscriptions.Count > 0)
+                {
+                    Subscriptions[0].Nodes.Add(srv);
+                }
+                Servers.Add(srv);
+            }
         }
 
         if (!string.IsNullOrEmpty(savedData.SelectedServerId))
         {
             SelectedServer = Servers.FirstOrDefault(s => s.Id == savedData.SelectedServerId);
-        }
-        if (SelectedServer == null && Servers.Count > 0)
-        {
-            SelectedServer = Servers[0];
-        }
-
-        if (Subscriptions.Count > 0)
-        {
-            SelectedSubscription = Subscriptions[0];
         }
 
         // Restore Settings from persistence
@@ -327,6 +395,10 @@ public class MainViewModel : ViewModelBase
         if (savedData.Settings.TryGetValue("IsGlobalMode", out string? globalModeStr) && bool.TryParse(globalModeStr, out bool savedGlobalMode))
         {
             _isGlobalMode = savedGlobalMode;
+        }
+        if (savedData.Settings.TryGetValue("IsUseProxyForSubUpdate", out string? useProxyStr) && bool.TryParse(useProxyStr, out bool savedUseProxy))
+        {
+            _isUseProxyForSubUpdate = savedUseProxy;
         }
 
         // Start Traffic & Memory Usage Timer (1 second interval)
@@ -427,10 +499,19 @@ public class MainViewModel : ViewModelBase
                 // If currently connected, restart core with new node config, AllowLan and IsGlobalMode
                 if (IsConnected)
                 {
-                    AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在热重启 Xray 内核应用新节点配置...");
-                    string configJson = _xrayManager.GenerateClientConfig(node, AllowLan, IsGlobalMode);
-                    _xrayManager.StartCore(configJson);
-                    NotifyXrayStatusChanged();
+                    AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在异步热重启 Xray 内核应用新节点配置...");
+                    var srv = node;
+                    var lan = AllowLan;
+                    var global = IsGlobalMode;
+                    _ = Task.Run(() =>
+                    {
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        _xrayManager.StartCore(configJson);
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            NotifyXrayStatusChanged();
+                        });
+                    });
 
                     // 切换节点时主动发起测速与AI解锁检测
                     _ = RefreshCurrentLatencyAsync();
@@ -471,10 +552,12 @@ public class MainViewModel : ViewModelBase
             }
         });
 
-        // 默认打开时自动在后台静默更新订阅并触发初始化测速
+        // 启动时初始化测速（不自动更新订阅，仅支持手动更新）
         _ = Task.Run(async () =>
         {
             await Task.Delay(1500); // 延迟 1.5 秒等待主窗口完全初始化
+            _isInitializing = false; // 初始化完成，解除订阅切换限制
+            AppLogger.LogSystem("[主控逻辑] 应用程序初始化完成，已解除订阅切换限制。");
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 await RefreshCurrentLatencyAsync();
@@ -483,17 +566,6 @@ public class MainViewModel : ViewModelBase
                     await TestAllAiUnlockAsync();
                 }
             });
-
-            foreach (var sub in Subscriptions.ToList())
-            {
-                if (sub.AutoUpdate)
-                {
-                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
-                    {
-                        await UpdateSubscriptionItemAsync(sub, showAlert: false);
-                    });
-                }
-            }
         });
     }
 
@@ -597,34 +669,67 @@ public class MainViewModel : ViewModelBase
         {
             if (SelectedServer == null)
             {
-                SelectedServer = Servers.FirstOrDefault();
-                AppLogger.LogSystem("[主控逻辑] 提示：当前未选中任何节点，已自动选择列表首个节点。");
+                AppLogger.LogSystem("[主控逻辑] 提示：当前未选中任何节点。");
+                new Views.AlertWindow("提示", "请先在节点列表中选择一个服务器节点。", false).ShowDialog();
+                SelectedTabIndex = 1; // Switch to nodes tab
+                return;
             }
 
             if (SelectedServer != null)
             {
                 AppLogger.LogSystem($"[主控逻辑] 正在使用节点启动代理: {SelectedServer.Name} (允许局域网: {AllowLan}, 全局模式: {IsGlobalMode})");
-                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode);
-                bool success = _xrayManager.StartCore(configJson);
-                if (!success)
+                var srv = SelectedServer;
+                var lan = AllowLan;
+                var global = IsGlobalMode;
+
+                IsConnected = true;
+                IsSystemProxyEnabled = true;
+                foreach (var node in Servers)
                 {
-                    AppLogger.LogSystem("[主控逻辑] 错误：Xray 核心启动失败。");
-                    new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xraylib.exe 是否存在。", false).ShowDialog();
-                    return;
+                    node.IsConnected = false;
                 }
-            }
-            else
-            {
-                AppLogger.LogSystem("[主控逻辑] 提示：节点列表为空，无法启动代理。");
-                new Views.AlertWindow("提示", "请先在节点列表中选择或添加一个服务器节点。", false).ShowDialog();
-                SelectedTabIndex = 1; // Switch to nodes tab
+                srv.IsConnected = true;
+                NotifyXrayStatusChanged();
+                SaveState();
+
+                _ = Task.Run(() =>
+                {
+                    string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                    bool success = _xrayManager.StartCore(configJson);
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (!success)
+                        {
+                            AppLogger.LogSystem("[主控逻辑] 错误：Xray 核心启动失败。");
+                            new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xraylib.exe 是否存在。", false).ShowDialog();
+                            IsConnected = false;
+                            IsSystemProxyEnabled = false;
+                            srv.IsConnected = false;
+                            NotifyXrayStatusChanged();
+                            SaveState();
+                        }
+                        else
+                        {
+                            NotifyXrayStatusChanged();
+                            _ = RefreshCurrentLatencyAsync();
+                            _ = TestAllAiUnlockAsync();
+                        }
+                    });
+                });
                 return;
             }
         }
         else
         {
             AppLogger.LogSystem("[主控逻辑] 正在关闭代理，停止 Xray 核心...");
-            _xrayManager.StopCore();
+            _ = Task.Run(() =>
+            {
+                _xrayManager.StopCore();
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    NotifyXrayStatusChanged();
+                });
+            });
         }
 
         IsConnected = willBeConnected;
@@ -640,7 +745,6 @@ public class MainViewModel : ViewModelBase
         NotifyXrayStatusChanged();
         SaveState();
 
-        // 当链接节点成功后，主动触发测速与AI解锁检测
         if (IsConnected)
         {
             _ = RefreshCurrentLatencyAsync();
@@ -661,7 +765,8 @@ public class MainViewModel : ViewModelBase
         {
             ["AllowLan"] = AllowLan.ToString(),
             ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
-            ["IsGlobalMode"] = IsGlobalMode.ToString()
+            ["IsGlobalMode"] = IsGlobalMode.ToString(),
+            ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString()
         };
         _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
     }
@@ -754,24 +859,34 @@ public class MainViewModel : ViewModelBase
 
     public async Task UpdateSubscriptionItemAsync(SubscriptionItem item, bool showAlert = true)
     {
-        AppLogger.LogSystem($"[订阅逻辑] 开始更新订阅: {item.Name} (URL: {item.Url})");
+        AppLogger.LogSystem($"[订阅逻辑] 开始更新订阅: {item.Name} (URL: {item.Url}, 使用代理: {IsUseProxyForSubUpdate})");
         item.IsUpdating = true;
         IsSubUpdating = true;
         try
         {
-            var fetchedNodes = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url);
+            var fetchedNodes = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url, IsUseProxyForSubUpdate);
             AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点。");
             item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : 0;
             item.LastUpdated = DateTime.Now;
-            Servers.Clear();
+
+            item.Nodes.Clear();
             foreach (var node in fetchedNodes)
             {
-                    Servers.Add(node);
+                node.SubscriptionId = item.Id;
+                item.Nodes.Add(node);
             }
 
-            if (SelectedServer == null && Servers.Count > 0)
+            if (SelectedSubscription == item)
             {
-                SelectedServer = Servers[0];
+                Servers.Clear();
+                foreach (var node in item.Nodes)
+                {
+                    Servers.Add(node);
+                }
+                if (SelectedServer == null || !Servers.Contains(SelectedServer))
+                {
+                    SelectedServer = Servers.FirstOrDefault();
+                }
             }
 
             SaveState();

@@ -45,6 +45,7 @@ public static class SqliteStorageService
 
                 CREATE TABLE IF NOT EXISTS Servers (
                     Id TEXT PRIMARY KEY,
+                    SubscriptionId TEXT,
                     Name TEXT,
                     Address TEXT,
                     Port INTEGER,
@@ -68,6 +69,20 @@ public static class SqliteStorageService
                 );
             ";
             command.ExecuteNonQuery();
+
+            // 检查并自动适配旧版数据库：若 Servers 表缺少 SubscriptionId 字段则动态添加
+            try
+            {
+                using var alterCmd = connection.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE Servers ADD COLUMN SubscriptionId TEXT;";
+                alterCmd.ExecuteNonQuery();
+                AppLogger.LogSystem("[SQLite存储] 成功为 Servers 表补全 SubscriptionId 列。");
+            }
+            catch
+            {
+                // 列已存在或无需添加，忽略异常
+            }
+
             AppLogger.LogSystem("[SQLite存储] SQLite 数据库表结构初始化成功。");
         }
         catch (Exception ex)
@@ -106,33 +121,55 @@ public static class SqliteStorageService
                 }
             }
 
+            if (model.Subscriptions.Count == 0)
+            {
+                var defaultSub = new SubscriptionItem
+                {
+                    Name = "常用节点订阅",
+                    Url = "https://sub.ly123.edu.kg/api/v1/client/subscribe?token=demo123",
+                    NodeCount = 0
+                };
+                model.Subscriptions.Add(defaultSub);
+            }
+
             // 2. Load Servers
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked FROM Servers";
+                cmd.CommandText = "SELECT Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked FROM Servers";
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
                     var node = new ServerNode
                     {
                         Id = reader.GetString(0),
-                        Name = reader.IsDBNull(1) ? "" : reader.GetString(1),
-                        Address = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                        Port = reader.GetInt32(3),
-                        Protocol = reader.IsDBNull(4) ? "VLESS" : reader.GetString(4),
-                        Security = reader.IsDBNull(5) ? "Reality" : reader.GetString(5),
-                        Transport = reader.IsDBNull(6) ? "TCP" : reader.GetString(6),
-                        Uuid = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                        Sni = reader.IsDBNull(8) ? "" : reader.GetString(8),
-                        PublicKey = reader.IsDBNull(9) ? "" : reader.GetString(9),
-                        ShortId = reader.IsDBNull(10) ? "" : reader.GetString(10),
-                        Flow = reader.IsDBNull(11) ? "" : reader.GetString(11),
-                        LatencyMs = reader.GetInt32(12),
-                        IsOpenAiUnlocked = reader.GetInt32(13) == 1,
-                        IsClaudeUnlocked = reader.GetInt32(14) == 1,
-                        IsGeminiUnlocked = reader.GetInt32(15) == 1
+                        SubscriptionId = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                        Name = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                        Address = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                        Port = reader.GetInt32(4),
+                        Protocol = reader.IsDBNull(5) ? "VLESS" : reader.GetString(5),
+                        Security = reader.IsDBNull(6) ? "Reality" : reader.GetString(6),
+                        Transport = reader.IsDBNull(7) ? "TCP" : reader.GetString(7),
+                        Uuid = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                        Sni = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                        PublicKey = reader.IsDBNull(10) ? "" : reader.GetString(10),
+                        ShortId = reader.IsDBNull(11) ? "" : reader.GetString(11),
+                        Flow = reader.IsDBNull(12) ? "" : reader.GetString(12),
+                        LatencyMs = reader.GetInt32(13),
+                        IsOpenAiUnlocked = reader.GetInt32(14) == 1,
+                        IsClaudeUnlocked = reader.GetInt32(15) == 1,
+                        IsGeminiUnlocked = reader.GetInt32(16) == 1
                     };
                     model.CachedServers.Add(node);
+
+                    var sub = model.Subscriptions.FirstOrDefault(s => s.Id == node.SubscriptionId);
+                    if (sub != null)
+                    {
+                        sub.Nodes.Add(node);
+                    }
+                    else if (model.Subscriptions.Count > 0)
+                    {
+                        model.Subscriptions[0].Nodes.Add(node);
+                    }
                 }
             }
 
@@ -167,7 +204,7 @@ public static class SqliteStorageService
         return model;
     }
 
-    public static async Task SaveAsync(IEnumerable<SubscriptionItem> subscriptions, IEnumerable<ServerNode> servers, string? selectedServerId, Dictionary<string, string>? extraSettings = null)
+    public static async Task SaveAsync(IEnumerable<SubscriptionItem> subscriptions, IEnumerable<ServerNode> ignoredServers, string? selectedServerId, Dictionary<string, string>? extraSettings = null)
     {
         await LockSlim.WaitAsync();
         try
@@ -187,7 +224,7 @@ public static class SqliteStorageService
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                // Insert Subscriptions
+                // Insert Subscriptions and their Nodes
                 foreach (var sub in subscriptions)
                 {
                     using var cmd = connection.CreateCommand();
@@ -199,38 +236,38 @@ public static class SqliteStorageService
                     cmd.Parameters.AddWithValue("@Id", sub.Id ?? Guid.NewGuid().ToString());
                     cmd.Parameters.AddWithValue("@Name", sub.Name ?? "");
                     cmd.Parameters.AddWithValue("@Url", sub.Url ?? "");
-                    cmd.Parameters.AddWithValue("@NodeCount", sub.NodeCount);
+                    cmd.Parameters.AddWithValue("@NodeCount", sub.Nodes.Count > 0 ? sub.Nodes.Count : sub.NodeCount);
                     cmd.Parameters.AddWithValue("@LastUpdated", sub.LastUpdated.HasValue ? sub.LastUpdated.Value.ToString("o") : (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@AutoUpdate", sub.AutoUpdate ? 1 : 0);
                     await cmd.ExecuteNonQueryAsync();
-                }
 
-                // Insert Servers
-                foreach (var node in servers)
-                {
-                    using var cmd = connection.CreateCommand();
-                    cmd.Transaction = transaction;
-                    cmd.CommandText = @"
-                        INSERT INTO Servers (Id, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked)
-                        VALUES (@Id, @Name, @Address, @Port, @Protocol, @Security, @Transport, @Uuid, @Sni, @PublicKey, @ShortId, @Flow, @LatencyMs, @IsOpenAiUnlocked, @IsClaudeUnlocked, @IsGeminiUnlocked);
-                    ";
-                    cmd.Parameters.AddWithValue("@Id", node.Id ?? Guid.NewGuid().ToString());
-                    cmd.Parameters.AddWithValue("@Name", node.Name ?? "");
-                    cmd.Parameters.AddWithValue("@Address", node.Address ?? "");
-                    cmd.Parameters.AddWithValue("@Port", node.Port);
-                    cmd.Parameters.AddWithValue("@Protocol", node.Protocol ?? "VLESS");
-                    cmd.Parameters.AddWithValue("@Security", node.Security ?? "Reality");
-                    cmd.Parameters.AddWithValue("@Transport", node.Transport ?? "TCP");
-                    cmd.Parameters.AddWithValue("@Uuid", node.Uuid ?? "");
-                    cmd.Parameters.AddWithValue("@Sni", node.Sni ?? "");
-                    cmd.Parameters.AddWithValue("@PublicKey", node.PublicKey ?? "");
-                    cmd.Parameters.AddWithValue("@ShortId", node.ShortId ?? "");
-                    cmd.Parameters.AddWithValue("@Flow", node.Flow ?? "");
-                    cmd.Parameters.AddWithValue("@LatencyMs", node.LatencyMs);
-                    cmd.Parameters.AddWithValue("@IsOpenAiUnlocked", node.IsOpenAiUnlocked ? 1 : 0);
-                    cmd.Parameters.AddWithValue("@IsClaudeUnlocked", node.IsClaudeUnlocked ? 1 : 0);
-                    cmd.Parameters.AddWithValue("@IsGeminiUnlocked", node.IsGeminiUnlocked ? 1 : 0);
-                    await cmd.ExecuteNonQueryAsync();
+                    foreach (var node in sub.Nodes)
+                    {
+                        using var sCmd = connection.CreateCommand();
+                        sCmd.Transaction = transaction;
+                        sCmd.CommandText = @"
+                            INSERT INTO Servers (Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked)
+                            VALUES (@Id, @SubscriptionId, @Name, @Address, @Port, @Protocol, @Security, @Transport, @Uuid, @Sni, @PublicKey, @ShortId, @Flow, @LatencyMs, @IsOpenAiUnlocked, @IsClaudeUnlocked, @IsGeminiUnlocked);
+                        ";
+                        sCmd.Parameters.AddWithValue("@Id", node.Id ?? Guid.NewGuid().ToString());
+                        sCmd.Parameters.AddWithValue("@SubscriptionId", sub.Id);
+                        sCmd.Parameters.AddWithValue("@Name", node.Name ?? "");
+                        sCmd.Parameters.AddWithValue("@Address", node.Address ?? "");
+                        sCmd.Parameters.AddWithValue("@Port", node.Port);
+                        sCmd.Parameters.AddWithValue("@Protocol", node.Protocol ?? "VLESS");
+                        sCmd.Parameters.AddWithValue("@Security", node.Security ?? "Reality");
+                        sCmd.Parameters.AddWithValue("@Transport", node.Transport ?? "TCP");
+                        sCmd.Parameters.AddWithValue("@Uuid", node.Uuid ?? "");
+                        sCmd.Parameters.AddWithValue("@Sni", node.Sni ?? "");
+                        sCmd.Parameters.AddWithValue("@PublicKey", node.PublicKey ?? "");
+                        sCmd.Parameters.AddWithValue("@ShortId", node.ShortId ?? "");
+                        sCmd.Parameters.AddWithValue("@Flow", node.Flow ?? "");
+                        sCmd.Parameters.AddWithValue("@LatencyMs", node.LatencyMs);
+                        sCmd.Parameters.AddWithValue("@IsOpenAiUnlocked", node.IsOpenAiUnlocked ? 1 : 0);
+                        sCmd.Parameters.AddWithValue("@IsClaudeUnlocked", node.IsClaudeUnlocked ? 1 : 0);
+                        sCmd.Parameters.AddWithValue("@IsGeminiUnlocked", node.IsGeminiUnlocked ? 1 : 0);
+                        await sCmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 // Save SelectedServerId Setting

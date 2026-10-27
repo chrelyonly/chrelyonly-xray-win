@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using chrelyonly_xray_win.ViewModels;
 
 namespace chrelyonly_xray_win.Models;
@@ -11,6 +12,8 @@ public class SubscriptionItem : ViewModelBase
     private DateTime? _lastUpdated;
     private bool _autoUpdate = true;
     private bool _isUpdating = false;
+
+    public ObservableCollection<ServerNode> Nodes { get; } = new();
 
     public string Id
     {
