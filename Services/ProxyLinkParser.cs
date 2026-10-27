@@ -16,13 +16,9 @@ public static class ProxyLinkParser
             {
                 return ParseVless(shareUrl);
             }
-            if (shareUrl.StartsWith("vmess://", StringComparison.OrdinalIgnoreCase))
+            if (shareUrl.StartsWith("hysteria2://", StringComparison.OrdinalIgnoreCase))
             {
-                return ParseVmess(shareUrl);
-            }
-            if (shareUrl.StartsWith("trojan://", StringComparison.OrdinalIgnoreCase))
-            {
-                return ParseTrojan(shareUrl);
+                return ParseHy2(shareUrl);
             }
         }
         catch
@@ -55,7 +51,34 @@ public static class ProxyLinkParser
             Sni = query["sni"] ?? "",
             PublicKey = query["pbk"] ?? "",
             ShortId = query["sid"] ?? "",
-            Flow = query["flow"] ?? ""
+            Flow = query["flow"] ?? "",
+            Encryption = query["encryption"] ?? "",
+            Ech = query["ech"] ?? "",
+            Host = query["host"] ?? "",
+            Path = query["path"] ?? "",
+            Email = query["path"] ?? "t@t.tt",
+        };
+    }
+    private static ServerNode ParseHy2(string url)
+    {
+        // Format: vless://uuid@host:port?security=...&sni=...&type=...#remark
+        var uri = new Uri(url);
+        var userInfo = HttpUtility.UrlDecode(uri.UserInfo);
+        var remark = HttpUtility.UrlDecode(uri.Fragment.TrimStart('#'));
+        if (string.IsNullOrEmpty(remark)) remark = uri.Host;
+
+        var query = HttpUtility.ParseQueryString(uri.Query);
+
+        return new ServerNode
+        {
+            Name = remark,
+            Address = uri.Host,
+            Port = uri.Port > 0 ? uri.Port : 443,
+            Protocol = "VLESS",
+            Uuid = userInfo,
+            Sni = query["sni"] ?? "",
+            Obfs = query["obfs"] ?? "",
+            ObfsPassword = query["obfs-password"] ?? "",
         };
     }
 

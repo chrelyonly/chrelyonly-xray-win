@@ -8,6 +8,13 @@ public class ServerNode : ViewModelBase
     private string _name = "新节点";
     private string _address = "127.0.0.1";
     private int _port = 443;
+    private string _email = "";
+    private string _host = "";
+    private string _ech = "";
+    private string _path = "";
+    private string _encryption = "";
+    private string _obfs = "";
+    private string _obfs_password = "";
     private string _protocol = "VLESS"; // VLESS, VMess, Trojan, Shadowsocks
     private string _security = "Reality"; // Reality, TLS, None
     private string _transport = "TCP"; // TCP, WebSocket, gRPC
@@ -45,6 +52,46 @@ public class ServerNode : ViewModelBase
     {
         get => _port;
         set => SetProperty(ref _port, value);
+    }
+
+    public string Email
+    {
+        get => _email;
+        set => SetProperty(ref _email, value);
+    }
+
+    public string Path
+    {
+        get => _path;
+        set => SetProperty(ref _path, value);
+    }
+
+
+    public string ObfsPassword
+    {
+        get => _obfs_password;
+        set => SetProperty(ref _obfs_password, value);
+    }
+    public string Obfs
+    {
+        get => _obfs;
+        set => SetProperty(ref _obfs, value);
+    }
+
+    public string Host
+    {
+        get => _host;
+        set => SetProperty(ref _host, value);
+    }
+    public string Ech
+    {
+        get => _ech;
+        set => SetProperty(ref _ech, value);
+    }
+    public string Encryption
+    {
+        get => _encryption;
+        set => SetProperty(ref _encryption, value);
     }
 
     public string Protocol
