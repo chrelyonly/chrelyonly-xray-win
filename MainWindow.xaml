@@ -67,8 +67,16 @@
                         <TextBlock Text="莓莓修仙版" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryTextBrush}"/>
                     </StackPanel>
 
-                    <!-- Window Control Buttons -->
+                    <!-- Notification Toggle & Window Control Buttons -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="Windows通知" FontSize="11" Foreground="#6B7280" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding IsNotificationsEnabled}"
+                                          VerticalAlignment="Center"
+                                          ToolTip="开启或关闭接收 Windows 消息通知（系统托盘气泡提示）"/>
+                        </StackPanel>
+
                         <Button Click="OnMinimizeClick" Style="{StaticResource IconButtonCategoryStyle}" Width="28" Height="28">
                             <Path Data="M0,0 L10,0" Stroke="#4B5563" StrokeThickness="1.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Button>

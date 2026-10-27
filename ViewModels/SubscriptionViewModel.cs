@@ -48,10 +48,6 @@ public class SubscriptionViewModel : ViewModelBase
         // Add sample default subscription item
         var defaultSub = new SubscriptionItem
         {
-            Name = "常用节点订阅",
-            Url = "https://sub.ly123.edu.kg/api/v1/client/subscribe?token=demo123",
-            NodeCount = 6,
-            LastUpdated = DateTime.Now.AddHours(-2)
         };
         Subscriptions.Add(defaultSub);
         SelectedSubscription = defaultSub;

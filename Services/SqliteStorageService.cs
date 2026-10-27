@@ -125,9 +125,6 @@ public static class SqliteStorageService
             {
                 var defaultSub = new SubscriptionItem
                 {
-                    Name = "常用节点订阅",
-                    Url = "https://sub.ly123.edu.kg/api/v1/client/subscribe?token=demo123",
-                    NodeCount = 0
                 };
                 model.Subscriptions.Add(defaultSub);
             }

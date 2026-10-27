@@ -11,7 +11,11 @@ public static class SubscriptionService
 
     static SubscriptionService()
     {
-        HttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var defaultHandler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+        };
+        HttpClient = new HttpClient(defaultHandler) { Timeout = TimeSpan.FromSeconds(15) };
         // 许多订阅服务器会拒绝默认的 .NET UA，必须携带合法的 User-Agent
         try
         {
@@ -38,12 +42,13 @@ public static class SubscriptionService
                 var handler = new HttpClientHandler
                 {
                     Proxy = new System.Net.WebProxy("127.0.0.1", 10809),
-                    UseProxy = true
+                    UseProxy = true,
+                    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
                 };
                 client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
                 try
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "chrelyonly-xray-win/1.0 (v2rayN/Clash)");
+                    client.DefaultRequestHeaders.Add("User-Agent", "chrelyonly-xray-win/1.0 (v2rayN/xray)");
                 }
                 catch { }
             }

@@ -143,6 +143,7 @@ public partial class MainWindow : Window
 
     public void ShowTrayNotification(string title, string message, System.Windows.Forms.ToolTipIcon icon = System.Windows.Forms.ToolTipIcon.Info)
     {
+        if (ViewModel?.IsNotificationsEnabled != true) return;
         try
         {
             _notifyIcon?.ShowBalloonTip(2500, title, message, icon);

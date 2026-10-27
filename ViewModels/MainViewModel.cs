@@ -264,6 +264,20 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    private bool _isNotificationsEnabled = true;
+    public bool IsNotificationsEnabled
+    {
+        get => _isNotificationsEnabled;
+        set
+        {
+            if (SetProperty(ref _isNotificationsEnabled, value))
+            {
+                SaveState();
+                AppLogger.LogSystem($"[系统设置] Windows消息通知开关已更改为: {value}");
+            }
+        }
+    }
+
     private bool _isInitializing = true;
     private SubscriptionItem? _selectedSubscription;
 
@@ -399,6 +413,10 @@ public class MainViewModel : ViewModelBase
         if (savedData.Settings.TryGetValue("IsUseProxyForSubUpdate", out string? useProxyStr) && bool.TryParse(useProxyStr, out bool savedUseProxy))
         {
             _isUseProxyForSubUpdate = savedUseProxy;
+        }
+        if (savedData.Settings.TryGetValue("IsNotificationsEnabled", out string? notifStr) && bool.TryParse(notifStr, out bool savedNotif))
+        {
+            _isNotificationsEnabled = savedNotif;
         }
 
         // Start Traffic & Memory Usage Timer (1 second interval)
@@ -766,7 +784,8 @@ public class MainViewModel : ViewModelBase
             ["AllowLan"] = AllowLan.ToString(),
             ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
             ["IsGlobalMode"] = IsGlobalMode.ToString(),
-            ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString()
+            ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString(),
+            ["IsNotificationsEnabled"] = IsNotificationsEnabled.ToString()
         };
         _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
     }
@@ -864,6 +883,18 @@ public class MainViewModel : ViewModelBase
         IsSubUpdating = true;
         try
         {
+            if (IsUseProxyForSubUpdate && !_xrayManager.IsRunning)
+            {
+                var srv = SelectedServer ?? Servers.FirstOrDefault();
+                if (srv != null)
+                {
+                    AppLogger.LogSystem("[订阅逻辑] 代理更新已开启，但 Xray 内核未运行，正在自动启动内核以提供代理支持...");
+                    string configJson = _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode);
+                    _xrayManager.StartCore(configJson);
+                    await Task.Delay(1000); // 等待内核就绪
+                }
+            }
+
             var fetchedNodes = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url, IsUseProxyForSubUpdate);
             AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点。");
             item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : 0;
