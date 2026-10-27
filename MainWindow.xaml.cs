@@ -64,7 +64,7 @@ public partial class MainWindow : Window
         _notifyIcon = new System.Windows.Forms.NotifyIcon
         {
             Icon = trayIcon,
-            Text = "代理控制台",
+            Text = "莓莓修仙版",
             Visible = true // 始终在系统托盘显示
         };
 

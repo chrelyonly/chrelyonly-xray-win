@@ -256,14 +256,6 @@ private JsonArray BuildOutbounds(ServerNode node)
     {
         ["tag"] = "proxy",
         ["protocol"] = node.Protocol,
-        ["settings"] = new JsonObject
-        {
-            ["address"] = address,
-            ["port"] = port,
-            ["email"] = email,
-            ["id"] = node.Uuid,
-            ["encryption"] = encryption,
-        },
         ["streamSettings"] = new JsonObject
         {
             ["network"] = transport,
@@ -271,24 +263,79 @@ private JsonArray BuildOutbounds(ServerNode node)
         }
     };
 
+    
+    // 如果是协议是hy2
+    if (node.Protocol.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
+    {
+        proxyOutbound["settings"] = new JsonObject
+        {
+            ["address"] = address,
+            ["port"] = port,
+            ["version"] = 2,
+        };
+    }
+    // 如果是vless
+    if (node.Protocol.Equals("vless", StringComparison.OrdinalIgnoreCase))
+    {
+        proxyOutbound["settings"] = new JsonObject
+        {
+            ["address"] = address,
+            ["port"] = port,
+            ["email"] = email,
+            ["id"] = node.Uuid,
+            ["encryption"] = encryption,
+        };
+    }
 
     // 如果是tls加密
     if (security.Equals("tls", StringComparison.OrdinalIgnoreCase))
     {
-        proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
+        
+        // 如果是vless
+        if (node.Protocol.Equals("vless", StringComparison.OrdinalIgnoreCase))
         {
-            ["serverName"] = node.Host,
-            ["alpn"] = new JsonArray()
+            proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
             {
-                "h2",
-                "http/1.1",
-                "h3"
-            },
+                ["serverName"] = node.Host,
+                ["alpn"] = new JsonArray()
+                {
+                    "h2",
+                    "http/1.1",
+                    "h3"
+                },
+                ["fingerprint"] =  "chrome",
+                ["echConfigList"] = node.Ech,
+                ["echForceQuery"] = "full"
+            };
+        }
+        // 如果hy2
+        if (node.Protocol.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
+        {
+            proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
+            {
+                ["serverName"] = node.Host,
+                ["fingerprint"] =  "chrome",
+            };
+        }
+        
+    }
+    if (security.Equals("reality", StringComparison.OrdinalIgnoreCase))
+    {
+        proxyOutbound["streamSettings"]["realitySettings"] = new JsonObject()
+        {
+            ["serverName"] = node.Sni,
             ["fingerprint"] =  "chrome",
-            ["echConfigList"] = node.Ech,
-            ["echForceQuery"] = "full"
+            ["show"] =  false,
+            ["publicKey"] =  node.PublicKey,
+            ["shortId"] =  node.ShortId,
+            ["spiderX"] =  node.Spx,
+            ["mldsa65Verify"] =  "",
         };
     }
+    
+    
+    
+    
     
     // 如果是ws传输方式
     if (transport.Equals("ws", StringComparison.OrdinalIgnoreCase))
@@ -301,6 +348,49 @@ private JsonArray BuildOutbounds(ServerNode node)
             ["headers"] =  new JsonObject()
             {
                 ["User-Agent"] = "chrome"
+            }
+        };
+    }
+    if (transport.Equals("xhttp", StringComparison.OrdinalIgnoreCase))
+    {
+        proxyOutbound["streamSettings"]["xhttpSettings"] = new JsonObject()
+        {
+
+            ["path"] = node.Path,
+            ["host"] = node.Host,
+            ["mode"] = "auto",
+            ["extra"] =  new JsonObject()
+            {
+                ["mode"] = "auto",
+                ["xPaddingBytes"] = "100-1000"
+            }
+        };
+    }
+    if (transport.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
+    {
+        proxyOutbound["streamSettings"]["hysteriaSettings"] = new JsonObject()
+        {
+            ["version"] = 2,
+            ["auth"] = node.Uuid,
+        };
+        proxyOutbound["streamSettings"]["finalmask"] = new JsonObject()
+        {
+            ["udp"] = new JsonArray()
+            {
+                new JsonObject()
+                {
+                    ["type"] = node.Obfs,
+                    ["settings"] = new JsonObject()
+                    {
+                        ["password"] = node.ObfsPassword,
+                    }
+                }
+            },
+            ["quicParams"] = new JsonObject()
+            {
+                ["congestion"] = "brutal",
+                ["brutalUp"] = "1000mbps",
+                ["brutalDown"] = "1000mbps",
             }
         };
     }
@@ -331,7 +421,91 @@ private JsonArray BuildOutbounds(ServerNode node)
 /// </summary>
 private JsonObject BuildRouting(bool isGlobalMode)
 {
-    string json = """
+    string globalMsg = "";
+    if (isGlobalMode)
+    {
+        globalMsg = """
+                    {
+                      "type": "field",
+                      "port": "0-65535",
+                      "outboundTag": "proxy"
+                    },
+                    """;
+    }
+    else
+    {
+        
+        globalMsg = """
+                    {
+                      "type": "field",
+                      "outboundTag": "direct",
+                      "ip": [
+                        "223.5.5.5",
+                        "223.6.6.6",
+                        "2400:3200::1",
+                        "2400:3200:baba::1",
+                        "119.29.29.29",
+                        "1.12.12.12",
+                        "120.53.53.53",
+                        "2402:4e00::",
+                        "2402:4e00:1::",
+                        "180.76.76.76",
+                        "2400:da00::6666",
+                        "114.114.114.114",
+                        "114.114.115.115",
+                        "114.114.114.119",
+                        "114.114.115.119",
+                        "114.114.114.110",
+                        "114.114.115.110",
+                        "180.184.1.1",
+                        "180.184.2.2",
+                        "101.226.4.6",
+                        "218.30.118.6",
+                        "123.125.81.6",
+                        "140.207.198.6",
+                        "1.2.4.8",
+                        "210.2.4.8",
+                        "52.80.66.66",
+                        "117.50.22.22",
+                        "2400:7fc0:849e:200::4",
+                        "2404:c2c0:85d8:901::4",
+                        "117.50.10.10",
+                        "52.80.52.52",
+                        "2400:7fc0:849e:200::8",
+                        "2404:c2c0:85d8:901::8",
+                        "117.50.60.30",
+                        "52.80.60.30"
+                      ]
+                    },
+                    {
+                      "type": "field",
+                      "outboundTag": "direct",
+                      "domain": [
+                        "domain:alidns.com",
+                        "domain:doh.pub",
+                        "domain:dot.pub",
+                        "domain:360.cn",
+                        "domain:onedns.net"
+                      ]
+                    },
+                    {
+                      "type": "field",
+                      "outboundTag": "direct",
+                      "ip": [
+                        "geoip:cn"
+                      ]
+                    },
+                    {
+                      "type": "field",
+                      "outboundTag": "direct",
+                      "domain": [
+                        "geosite:cn"
+                      ]
+                    },
+                    """;
+    }
+    
+    string json = $$"""
       {
         "domainStrategy": "AsIs",
         "rules": [
@@ -362,72 +536,7 @@ private JsonObject BuildRouting(bool isGlobalMode)
               "geosite:private"
             ]
           },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "ip": [
-              "223.5.5.5",
-              "223.6.6.6",
-              "2400:3200::1",
-              "2400:3200:baba::1",
-              "119.29.29.29",
-              "1.12.12.12",
-              "120.53.53.53",
-              "2402:4e00::",
-              "2402:4e00:1::",
-              "180.76.76.76",
-              "2400:da00::6666",
-              "114.114.114.114",
-              "114.114.115.115",
-              "114.114.114.119",
-              "114.114.115.119",
-              "114.114.114.110",
-              "114.114.115.110",
-              "180.184.1.1",
-              "180.184.2.2",
-              "101.226.4.6",
-              "218.30.118.6",
-              "123.125.81.6",
-              "140.207.198.6",
-              "1.2.4.8",
-              "210.2.4.8",
-              "52.80.66.66",
-              "117.50.22.22",
-              "2400:7fc0:849e:200::4",
-              "2404:c2c0:85d8:901::4",
-              "117.50.10.10",
-              "52.80.52.52",
-              "2400:7fc0:849e:200::8",
-              "2404:c2c0:85d8:901::8",
-              "117.50.60.30",
-              "52.80.60.30"
-            ]
-          },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "domain": [
-              "domain:alidns.com",
-              "domain:doh.pub",
-              "domain:dot.pub",
-              "domain:360.cn",
-              "domain:onedns.net"
-            ]
-          },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "ip": [
-              "geoip:cn"
-            ]
-          },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "domain": [
-              "geosite:cn"
-            ]
-          },
+          {{globalMsg}}
           {
             "type": "field",
             "inboundTag": [

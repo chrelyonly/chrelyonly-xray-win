@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Net.NetworkInformation;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.Services;
 
@@ -23,6 +24,23 @@ public class MainViewModel : ViewModelBase
     private bool _isSystemProxyEnabled = false;
     private bool _isGlobalMode = false;
     private string _memoryUsageText = "0.0 MB";
+    private string _uploadSpeedText = "0.0 KB/s";
+    private string _downloadSpeedText = "0.0 KB/s";
+    private long _lastBytesReceived = 0;
+    private long _lastBytesSent = 0;
+    private DateTime _lastTrafficCheckTime = DateTime.MinValue;
+
+    public string UploadSpeedText
+    {
+        get => _uploadSpeedText;
+        set => SetProperty(ref _uploadSpeedText, value);
+    }
+
+    public string DownloadSpeedText
+    {
+        get => _downloadSpeedText;
+        set => SetProperty(ref _downloadSpeedText, value);
+    }
 
     public ObservableCollection<ServerNode> Servers { get; } = new();
 
@@ -81,7 +99,7 @@ public class MainViewModel : ViewModelBase
 
     public string RoutingModeStatusText => IsGlobalMode ? "全局代理模式 (所有流量走代理)" : "智能分流模式 (大陆直连/海外代理)";
 
-    public string AppVersionText => "v1.0.0 (Xray-Core v25.1)";
+    public string AppVersionText => "v20261027修仙版";
 
     public string MemoryUsageText
     {
@@ -261,11 +279,12 @@ public class MainViewModel : ViewModelBase
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
 
         // Initialize AI Platforms
+        AiUnlockItems.Add(new AiUnlockItem { Key = "Baidu", Name = "Baidu", TestUrl = "https://www.baidu.com" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "Google", Name = "Google", TestUrl = "https://www.google.com" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "YouTube", Name = "YouTube", TestUrl = "https://www.youtube.com" });
         AiUnlockItems.Add(new AiUnlockItem { Key = "OpenAI", Name = "OpenAI", TestUrl = "https://chatgpt.com" });
         AiUnlockItems.Add(new AiUnlockItem { Key = "Claude", Name = "Claude", TestUrl = "https://claude.ai" });
         AiUnlockItems.Add(new AiUnlockItem { Key = "Gemini", Name = "Gemini", TestUrl = "https://gemini.google.com" });
-        AiUnlockItems.Add(new AiUnlockItem { Key = "YouTube", Name = "YouTube", TestUrl = "https://www.youtube.com" });
-        AiUnlockItems.Add(new AiUnlockItem { Key = "Google", Name = "Google", TestUrl = "https://www.google.com" });
 
         // Load persisted data using SqliteStorageService
         var savedData = Task.Run(() => SqliteStorageService.LoadAsync()).GetAwaiter().GetResult();
@@ -310,13 +329,24 @@ public class MainViewModel : ViewModelBase
             _isGlobalMode = savedGlobalMode;
         }
 
-        // Start Memory Usage Timer
-        var memTimer = new System.Windows.Threading.DispatcherTimer
+        // Start Traffic & Memory Usage Timer (1 second interval)
+        var timer = new System.Windows.Threading.DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(2)
+            Interval = TimeSpan.FromSeconds(1)
         };
-        memTimer.Tick += (s, e) => UpdateMemoryUsage();
-        memTimer.Start();
+        int tickCounter = 0;
+        timer.Tick += (s, e) =>
+        {
+            UpdateTrafficSpeed();
+            tickCounter++;
+            if (tickCounter >= 2)
+            {
+                tickCounter = 0;
+                UpdateMemoryUsage();
+            }
+        };
+        timer.Start();
+        UpdateTrafficSpeed();
         UpdateMemoryUsage();
 
         // Commands
@@ -476,6 +506,87 @@ public class MainViewModel : ViewModelBase
             MemoryUsageText = $"{workingSetMb:F1} MB";
         }
         catch { }
+    }
+
+    private void UpdateTrafficSpeed()
+    {
+        try
+        {
+            long totalBytesReceived = 0;
+            long totalBytesSent = 0;
+
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (ni.OperationalStatus == OperationalStatus.Up &&
+                    ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                {
+                    try
+                    {
+                        var stats = ni.GetIPStatistics();
+                        totalBytesReceived += stats.BytesReceived;
+                        totalBytesSent += stats.BytesSent;
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var v4Stats = ni.GetIPv4Statistics();
+                            totalBytesReceived += v4Stats.BytesReceived;
+                            totalBytesSent += v4Stats.BytesSent;
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            var now = DateTime.Now;
+            if (_lastTrafficCheckTime != DateTime.MinValue)
+            {
+                double seconds = (now - _lastTrafficCheckTime).TotalSeconds;
+                if (seconds > 0)
+                {
+                    long diffReceived = totalBytesReceived - _lastBytesReceived;
+                    long diffSent = totalBytesSent - _lastBytesSent;
+
+                    if (diffReceived < 0) diffReceived = 0;
+                    if (diffSent < 0) diffSent = 0;
+
+                    double downloadSpeed = diffReceived / seconds;
+                    double uploadSpeed = diffSent / seconds;
+
+                    DownloadSpeedText = FormatSpeed(downloadSpeed);
+                    UploadSpeedText = FormatSpeed(uploadSpeed);
+                }
+            }
+
+            _lastBytesReceived = totalBytesReceived;
+            _lastBytesSent = totalBytesSent;
+            _lastTrafficCheckTime = now;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[流量统计] 更新网速失败: {ex.Message}");
+        }
+    }
+
+    private string FormatSpeed(double bytesPerSecond)
+    {
+        if (bytesPerSecond >= 1024 * 1024 * 1024)
+        {
+            return $"{bytesPerSecond / (1024 * 1024 * 1024):F2} GB/s";
+        }
+        else if (bytesPerSecond >= 1024 * 1024)
+        {
+            return $"{bytesPerSecond / (1024 * 1024):F2} MB/s";
+        }
+        else if (bytesPerSecond >= 1024)
+        {
+            return $"{bytesPerSecond / 1024:F1} KB/s";
+        }
+        else
+        {
+            return $"{bytesPerSecond:F0} B/s";
+        }
     }
 
     private void ToggleConnection()

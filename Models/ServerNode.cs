@@ -22,6 +22,7 @@ public class ServerNode : ViewModelBase
     private string _sni = "";
     private string _publicKey = "";
     private string _shortId = "";
+    private string _spx = "";
     private string _flow = "";
     private bool _isConnected;
     private int _latencyMs = -1; // -1: untested, 0: timeout
@@ -134,6 +135,11 @@ public class ServerNode : ViewModelBase
     {
         get => _shortId;
         set => SetProperty(ref _shortId, value);
+    }
+    public string Spx
+    {
+        get => _spx;
+        set => SetProperty(ref _spx, value);
     }
 
     public string Flow

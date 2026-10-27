@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:chrelyonly_xray_win"
         xmlns:vm="clr-namespace:chrelyonly_xray_win.ViewModels"
         mc:Ignorable="d"
-        Title="代理控制台" Height="740" Width="460"
+        Title="莓莓修仙版" Height="740" Width="460"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -64,7 +64,7 @@
                         <Border Width="24" Height="24" CornerRadius="6" ClipToBounds="True" Margin="0,0,8,0">
                             <Image Source="/Assets/logo.jpg" Stretch="UniformToFill"/>
                         </Border>
-                        <TextBlock Text="代理控制台" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryTextBrush}"/>
+                        <TextBlock Text="莓莓修仙版" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryTextBrush}"/>
                     </StackPanel>
 
                     <!-- Window Control Buttons -->
@@ -389,6 +389,26 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
+                            </Border>
+
+                            <!-- Traffic Speed Info Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,16,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⬆️ 上传:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding UploadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <TextBlock Text="⬇️ 下载:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding DownloadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
 
                             <!-- Version & Memory Info Card -->

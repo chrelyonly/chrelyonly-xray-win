@@ -47,6 +47,7 @@ public static class AiUnlockTester
                 "Claude" => "https://claude.ai/login",
                 "Gemini" => "https://gemini.google.com",
                 "YouTube" => "https://www.youtube.com/premium",
+                "Baidu" => "https://www.baidu.com",
                 "Google" => "https://www.google.com/generate_204",
                 _ => "https://www.google.com/generate_204"
             };
