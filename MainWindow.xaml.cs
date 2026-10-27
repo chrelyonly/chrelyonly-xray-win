@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.ViewModels;
 using chrelyonly_xray_win.Views;
@@ -87,8 +89,6 @@ public partial class MainWindow : Window
             try
             {
                 Services.AppLogger.LogSystem("[程序退出] 正在停止 Xray 内核...");
-
-                // 使用当前 ViewModel 持有的核心管理器停止内核
                 ViewModel.StopXrayCore();
             }
             catch (Exception ex)
@@ -117,6 +117,67 @@ public partial class MainWindow : Window
         ViewModel.RequestAddSubscriptionAction = ShowAddSubscriptionDialog;
         ViewModel.RequestEditSubscriptionAction = ShowEditSubscriptionDialog;
         ViewModel.RequestDeleteSubscriptionAction = ShowDeleteSubscriptionConfirmation;
+
+        ViewModel.PropertyChanged += (s, args) =>
+        {
+            if (args.PropertyName == nameof(ViewModel.SelectedTabIndex))
+            {
+                AnimateTabTransition(ViewModel.SelectedTabIndex);
+            }
+        };
+    }
+
+    private int _previousTabIndex = 0;
+
+    private void AnimateTabTransition(int newTabIndex)
+    {
+        if (newTabIndex == _previousTabIndex) return;
+
+        FrameworkElement? targetElement = newTabIndex switch
+        {
+            0 => HomeTabGrid,
+            1 => NodesTabGrid,
+            2 => SubscriptionsTabGrid,
+            3 => LogsTabGrid,
+            _ => null
+        };
+
+        TranslateTransform? targetTransform = newTabIndex switch
+        {
+            0 => HomeTabTransform,
+            1 => NodesTabTransform,
+            2 => SubscriptionsTabTransform,
+            3 => LogsTabTransform,
+            _ => null
+        };
+
+        if (targetElement != null && targetTransform != null)
+        {
+            // 如果新 Tab 索引大（往右切换），则新 Tab 从右侧 (+80) 向左平滑切入
+            // 如果新 Tab 索引小（往左切换），则新 Tab 从左侧 (-80) 向右平滑切入
+            double startX = (newTabIndex > _previousTabIndex) ? 80.0 : -80.0;
+
+            var translateXAnimation = new DoubleAnimation
+            {
+                From = startX,
+                To = 0.0,
+                Duration = TimeSpan.FromMilliseconds(250),
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            var opacityAnimation = new DoubleAnimation
+            {
+                From = 0.0,
+                To = 1.0,
+                Duration = TimeSpan.FromMilliseconds(250),
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            targetTransform.BeginAnimation(TranslateTransform.XProperty, translateXAnimation);
+            targetElement.BeginAnimation(UIElement.OpacityProperty, opacityAnimation);
+        }
+
+        _previousTabIndex = newTabIndex;
     }
 
     private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
@@ -163,7 +224,6 @@ public partial class MainWindow : Window
     {
         try
         {
-            // 这里调用你项目中实际的 Xray 停止方法
             ViewModel.StopXrayCore();
         }
         catch (Exception ex)
@@ -184,40 +244,6 @@ public partial class MainWindow : Window
         }
     }
 
-
-    private void AiCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is not FrameworkElement element)
-            return;
-        string platform = element.Tag?.ToString() ?? string.Empty;
-        switch (platform)
-        {
-            case "OpenAI":
-                break;
-
-            case "Claude":
-                break;
-
-            case "Gemini":
-                break;
-
-            case "youtube":
-                break;
-
-            case "google":
-                break;
-            default:
-                break;
-        }
-        e.Handled = true;
-    }
-    
-    
-    
-    
-    
-    
-    
     private void ShowAddSubscriptionDialog()
     {
         ViewModel.IsModalOpen = true;
@@ -235,7 +261,6 @@ public partial class MainWindow : Window
                 ViewModel.Subscriptions.Add(newItem);
                 ViewModel.SelectedSubscription = newItem;
 
-                // Trigger node fetch for new subscription
                 _ = ViewModel.UpdateSubscriptionItemAsync(newItem);
             }
         }
@@ -256,7 +281,6 @@ public partial class MainWindow : Window
                 item.Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "订阅源" : dlg.SubscriptionName;
                 item.Url = dlg.SubscriptionUrl;
 
-                // Re-fetch nodes with updated URL
                 _ = ViewModel.UpdateSubscriptionItemAsync(item);
             }
         }

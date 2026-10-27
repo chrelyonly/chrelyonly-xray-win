@@ -16,13 +16,78 @@ public class MainViewModel : ViewModelBase
     private SubscriptionItem? _selectedSubscription;
     private bool _isSubUpdating = false;
     private bool _isModalOpen = false;
+    private bool _isTestingAiUnlock = false;
+    private bool _isTestingAllNodes = false;
+
+    private bool _allowLan = false;
+    private bool _isSystemProxyEnabled = false;
+    private bool _isGlobalMode = false;
+    private string _memoryUsageText = "0.0 MB";
 
     public ObservableCollection<ServerNode> Servers { get; } = new();
 
     public ObservableCollection<SubscriptionItem> Subscriptions { get; } = new();
 
+    public ObservableCollection<AiUnlockItem> AiUnlockItems { get; } = new();
+
     public ObservableCollection<string> SystemLogLines => AppLogger.SystemLogLines;
     public ObservableCollection<string> CoreLogLines => AppLogger.CoreLogLines;
+
+    public string LanIpAddress => SystemProxyManager.GetLocalLanIp();
+
+    public bool AllowLan
+    {
+        get => _allowLan;
+        set
+        {
+            if (SetProperty(ref _allowLan, value))
+            {
+                OnPropertyChanged(nameof(AllowLanStatusText));
+                SaveState();
+
+                if (IsConnected && SelectedServer != null)
+                {
+                    AppLogger.LogSystem($"[局域网共享] 局域网共享已切换为: {value}，正在重新应用 Xray 监听地址配置...");
+                    string configJson = _xrayManager.GenerateClientConfig(SelectedServer, value, IsGlobalMode);
+                    _xrayManager.StartCore(configJson);
+                    NotifyXrayStatusChanged();
+                }
+            }
+        }
+    }
+
+    public string AllowLanStatusText => AllowLan ? "局域网共享已开启 (监听 0.0.0.0)" : "仅限本机访问 (监听 127.0.0.1)";
+
+    public bool IsGlobalMode
+    {
+        get => _isGlobalMode;
+        set
+        {
+            if (SetProperty(ref _isGlobalMode, value))
+            {
+                OnPropertyChanged(nameof(RoutingModeStatusText));
+                SaveState();
+
+                if (IsConnected && SelectedServer != null)
+                {
+                    AppLogger.LogSystem($"[路由模式] 路由模式已变更为: {(value ? "全局代理" : "智能分流")}，正在热重启 Xray 内核应用路由配置...");
+                    string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, value);
+                    _xrayManager.StartCore(configJson);
+                    NotifyXrayStatusChanged();
+                }
+            }
+        }
+    }
+
+    public string RoutingModeStatusText => IsGlobalMode ? "全局代理模式 (所有流量走代理)" : "智能分流模式 (大陆直连/海外代理)";
+
+    public string AppVersionText => "v1.0.0 (Xray-Core v25.1)";
+
+    public string MemoryUsageText
+    {
+        get => _memoryUsageText;
+        set => SetProperty(ref _memoryUsageText, value);
+    }
 
     public bool IsLoggingEnabled
     {
@@ -51,6 +116,18 @@ public class MainViewModel : ViewModelBase
     {
         get => _isModalOpen;
         set => SetProperty(ref _isModalOpen, value);
+    }
+
+    public bool IsTestingAiUnlock
+    {
+        get => _isTestingAiUnlock;
+        set => SetProperty(ref _isTestingAiUnlock, value);
+    }
+
+    public bool IsTestingAllNodes
+    {
+        get => _isTestingAllNodes;
+        set => SetProperty(ref _isTestingAllNodes, value);
     }
 
     public int SelectedTabIndex
@@ -104,8 +181,39 @@ public class MainViewModel : ViewModelBase
     }
 
     public bool IsXrayRunning => _xrayManager.IsRunning;
-    public string XrayStatusText => IsXrayRunning ? "Xray 内核状态: 运行中 (Active)" : "Xray 内核状态: 未运行 (Stopped)";
+    public string XrayStatusText => IsXrayRunning ? "Xray 内核状态: 运行中" : "Xray 内核状态: 未运行";
     public string XrayStatusColor => IsXrayRunning ? "#10B981" : "#EF4444";
+
+    public bool IsSystemProxyEnabled
+    {
+        get => _isSystemProxyEnabled;
+        set
+        {
+            if (value)
+            {
+                var (isProxyActive, proxyServer, isOwn) = SystemProxyManager.CheckSystemProxyConflict(10809);
+                if (isProxyActive && !isOwn)
+                {
+                    AppLogger.LogSystem($"[系统代理冲突] 检测到当前系统代理已被第三方程序占用: {proxyServer}");
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Views.AlertWindow("代理冲突提示", $"检测到当前 Windows 系统代理已被其他程序占用 ({proxyServer})。\n现已自动覆盖并切换为本程序代理 (127.0.0.1:10809)。", true).ShowDialog();
+                    });
+                }
+            }
+
+            if (SetProperty(ref _isSystemProxyEnabled, value))
+            {
+                OnPropertyChanged(nameof(SystemProxyStatusText));
+                OnPropertyChanged(nameof(SystemProxyStatusColor));
+                SystemProxyManager.SetSystemProxy(value, "127.0.0.1:10809");
+                SaveState();
+            }
+        }
+    }
+
+    public string SystemProxyStatusText => IsSystemProxyEnabled ? "系统代理状态: 已开启" : "系统代理状态: 已关闭";
+    public string SystemProxyStatusColor => IsSystemProxyEnabled ? "#10B981" : "#6B7280";
 
     public SubscriptionItem? SelectedSubscription
     {
@@ -136,6 +244,12 @@ public class MainViewModel : ViewModelBase
     public RelayCommand ClearSystemLogsCommand { get; }
     public RelayCommand ClearCoreLogsCommand { get; }
 
+    // AI & Latency Testing Commands
+    public RelayCommand TestAiUnlockItemCommand { get; }
+    public RelayCommand TestAllAiUnlockCommand { get; }
+    public RelayCommand TestNodeLatencyCommand { get; }
+    public RelayCommand TestAllNodesLatencyCommand { get; }
+
     // Subscription Dialog Commands
     public RelayCommand AddSubDialogCommand { get; }
     public RelayCommand EditSubDialogCommand { get; }
@@ -145,6 +259,14 @@ public class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
+
+        // Initialize AI Platforms
+        AiUnlockItems.Add(new AiUnlockItem { Key = "OpenAI", Name = "OpenAI", TestUrl = "https://chatgpt.com" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "Claude", Name = "Claude", TestUrl = "https://claude.ai" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "Gemini", Name = "Gemini", TestUrl = "https://gemini.google.com" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "YouTube", Name = "YouTube", TestUrl = "https://www.youtube.com" });
+        AiUnlockItems.Add(new AiUnlockItem { Key = "Google", Name = "Google", TestUrl = "https://www.google.com" });
+
         // Load persisted data using SqliteStorageService
         var savedData = Task.Run(() => SqliteStorageService.LoadAsync()).GetAwaiter().GetResult();
         foreach (var sub in savedData.Subscriptions)
@@ -170,6 +292,33 @@ public class MainViewModel : ViewModelBase
             SelectedSubscription = Subscriptions[0];
         }
 
+        // Restore Settings from persistence
+        if (savedData.Settings.TryGetValue("AllowLan", out string? allowLanStr) && bool.TryParse(allowLanStr, out bool savedAllowLan))
+        {
+            _allowLan = savedAllowLan;
+        }
+        if (savedData.Settings.TryGetValue("IsSystemProxyEnabled", out string? sysProxyStr) && bool.TryParse(sysProxyStr, out bool savedSysProxy))
+        {
+            _isSystemProxyEnabled = savedSysProxy;
+        }
+        else
+        {
+            _isSystemProxyEnabled = SystemProxyManager.GetSystemProxyStatus();
+        }
+        if (savedData.Settings.TryGetValue("IsGlobalMode", out string? globalModeStr) && bool.TryParse(globalModeStr, out bool savedGlobalMode))
+        {
+            _isGlobalMode = savedGlobalMode;
+        }
+
+        // Start Memory Usage Timer
+        var memTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        memTimer.Tick += (s, e) => UpdateMemoryUsage();
+        memTimer.Start();
+        UpdateMemoryUsage();
+
         // Commands
         SelectTabCommand = new RelayCommand(obj =>
         {
@@ -182,6 +331,38 @@ public class MainViewModel : ViewModelBase
 
         ToggleConnectionCommand = new RelayCommand(ToggleConnection);
         RefreshLatencyCommand = new RelayCommand(async () => await RefreshCurrentLatencyAsync());
+
+        TestAiUnlockItemCommand = new RelayCommand(async obj =>
+        {
+            if (obj is AiUnlockItem item)
+            {
+                await TestSingleAiUnlockAsync(item);
+            }
+            else if (obj is string key)
+            {
+                var target = AiUnlockItems.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+                if (target != null)
+                {
+                    await TestSingleAiUnlockAsync(target);
+                }
+            }
+        });
+
+        TestAllAiUnlockCommand = new RelayCommand(async () => await TestAllAiUnlockAsync());
+
+        TestNodeLatencyCommand = new RelayCommand(async obj =>
+        {
+            if (obj is ServerNode node)
+            {
+                await TestSingleNodeLatencyAsync(node);
+            }
+            else
+            {
+                await RefreshCurrentLatencyAsync();
+            }
+        });
+
+        TestAllNodesLatencyCommand = new RelayCommand(async () => await TestAllNodesLatencyAsync());
 
         ToggleLoggingCommand = new RelayCommand(() =>
         {
@@ -213,13 +394,22 @@ public class MainViewModel : ViewModelBase
                 }
                 node.IsConnected = IsConnected;
 
-                // If currently connected, restart core with new node config
+                // If currently connected, restart core with new node config, AllowLan and IsGlobalMode
                 if (IsConnected)
                 {
                     AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在热重启 Xray 内核应用新节点配置...");
-                    string configJson = _xrayManager.GenerateClientConfig(node);
+                    string configJson = _xrayManager.GenerateClientConfig(node, AllowLan, IsGlobalMode);
                     _xrayManager.StartCore(configJson);
                     NotifyXrayStatusChanged();
+
+                    // 切换节点时主动发起测速与AI解锁检测
+                    _ = RefreshCurrentLatencyAsync();
+                    _ = TestAllAiUnlockAsync();
+                }
+                else
+                {
+                    // 未连接时也主动测节点延迟
+                    _ = TestSingleNodeLatencyAsync(node);
                 }
                 SaveState();
             }
@@ -251,10 +441,19 @@ public class MainViewModel : ViewModelBase
             }
         });
 
-        // 默认打开时自动在后台静默更新订阅
+        // 默认打开时自动在后台静默更新订阅并触发初始化测速
         _ = Task.Run(async () =>
         {
             await Task.Delay(1500); // 延迟 1.5 秒等待主窗口完全初始化
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                await RefreshCurrentLatencyAsync();
+                if (IsConnected)
+                {
+                    await TestAllAiUnlockAsync();
+                }
+            });
+
             foreach (var sub in Subscriptions.ToList())
             {
                 if (sub.AutoUpdate)
@@ -266,6 +465,17 @@ public class MainViewModel : ViewModelBase
                 }
             }
         });
+    }
+
+    private void UpdateMemoryUsage()
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetCurrentProcess();
+            double workingSetMb = process.WorkingSet64 / (1024.0 * 1024.0);
+            MemoryUsageText = $"{workingSetMb:F1} MB";
+        }
+        catch { }
     }
 
     private void ToggleConnection()
@@ -282,8 +492,8 @@ public class MainViewModel : ViewModelBase
 
             if (SelectedServer != null)
             {
-                AppLogger.LogSystem($"[主控逻辑] 正在使用节点启动代理: {SelectedServer.Name}");
-                string configJson = _xrayManager.GenerateClientConfig(SelectedServer);
+                AppLogger.LogSystem($"[主控逻辑] 正在使用节点启动代理: {SelectedServer.Name} (允许局域网: {AllowLan}, 全局模式: {IsGlobalMode})");
+                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode);
                 bool success = _xrayManager.StartCore(configJson);
                 if (!success)
                 {
@@ -307,6 +517,7 @@ public class MainViewModel : ViewModelBase
         }
 
         IsConnected = willBeConnected;
+        IsSystemProxyEnabled = willBeConnected;
         if (SelectedServer != null)
         {
             foreach (var node in Servers)
@@ -317,6 +528,13 @@ public class MainViewModel : ViewModelBase
         }
         NotifyXrayStatusChanged();
         SaveState();
+
+        // 当链接节点成功后，主动触发测速与AI解锁检测
+        if (IsConnected)
+        {
+            _ = RefreshCurrentLatencyAsync();
+            _ = TestAllAiUnlockAsync();
+        }
     }
 
     private void NotifyXrayStatusChanged()
@@ -328,21 +546,99 @@ public class MainViewModel : ViewModelBase
 
     public void SaveState()
     {
-        _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id);
+        var extra = new Dictionary<string, string>
+        {
+            ["AllowLan"] = AllowLan.ToString(),
+            ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
+            ["IsGlobalMode"] = IsGlobalMode.ToString()
+        };
+        _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
     }
 
     public void StopXrayCore()
     {
+        SystemProxyManager.SetSystemProxy(false);
         _xrayManager.StopCore();
     }
 
-    private async Task RefreshCurrentLatencyAsync()
+    public async Task RefreshCurrentLatencyAsync()
     {
         if (SelectedServer == null) return;
+        await TestSingleNodeLatencyAsync(SelectedServer);
+    }
 
-        SelectedServer.LatencyMs = -1;
-        var ms = await LatencyTester.TestTcpLatencyAsync(SelectedServer.Address, SelectedServer.Port);
-        SelectedServer.LatencyMs = ms > 0 ? ms : (new Random().Next(40, 95));
+    public async Task TestSingleNodeLatencyAsync(ServerNode node)
+    {
+        if (node == null || node.IsTestingLatency) return;
+        node.IsTestingLatency = true;
+        var ms = await LatencyTester.TestTcpLatencyAsync(node.Address, node.Port);
+        node.LatencyMs = ms > 0 ? ms : 0;
+        node.IsTestingLatency = false;
+    }
+
+    public async Task TestAllNodesLatencyAsync()
+    {
+        if (IsTestingAllNodes || Servers.Count == 0) return;
+        IsTestingAllNodes = true;
+        AppLogger.LogSystem($"[节点测速] 开始并发测速全部 {Servers.Count} 个节点...");
+        using var semaphore = new SemaphoreSlim(5);
+        var tasks = Servers.Select(async node =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                await TestSingleNodeLatencyAsync(node);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+        await Task.WhenAll(tasks);
+        IsTestingAllNodes = false;
+        AppLogger.LogSystem("[节点测速] 所有节点测速完成。");
+    }
+
+    public async Task TestSingleAiUnlockAsync(AiUnlockItem item)
+    {
+        if (item == null || item.IsTesting) return;
+        item.IsTesting = true;
+        item.Status = UnlockStatus.Testing;
+        AppLogger.LogSystem($"[AI检测] 开始测试平台: {item.Name}...");
+        try
+        {
+            var (status, ms) = await AiUnlockTester.TestPlatformAsync(item.Key, IsConnected);
+            item.Status = status;
+            item.LatencyMs = ms;
+        }
+        catch (Exception ex)
+        {
+            item.Status = UnlockStatus.Failed;
+            item.LatencyMs = 0;
+            AppLogger.LogSystem($"[AI检测] 平台 {item.Name} 测试发生异常: {ex.Message}");
+        }
+        finally
+        {
+            item.IsTesting = false;
+        }
+        AppLogger.LogSystem($"[AI检测] 平台 {item.Name} 测试完成: 状态={item.Status}, 延迟={item.LatencyMs}ms");
+    }
+
+    public async Task TestAllAiUnlockAsync()
+    {
+        if (IsTestingAiUnlock) return;
+        IsTestingAiUnlock = true;
+        AppLogger.LogSystem("[AI检测] 开始自动全量测试 AI 平台解锁状态...");
+        try
+        {
+            var tasks = AiUnlockItems.Select(item => TestSingleAiUnlockAsync(item)).ToList();
+            await Task.WhenAll(tasks);
+        }
+        finally
+        {
+            IsTestingAiUnlock = false;
+        }
+        AppLogger.LogSystem("[AI检测] 全量 AI 平台解锁状态测试完成。");
     }
 
     public async Task UpdateSubscriptionItemAsync(SubscriptionItem item, bool showAlert = true)

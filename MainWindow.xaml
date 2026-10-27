@@ -52,321 +52,44 @@
                     <RowDefinition Height="Auto"/> <!-- Bottom Tab Navigation Bar -->
                 </Grid.RowDefinitions>
 
-            <!-- Custom Window Title Bar -->
-            <Grid Grid.Row="0" Margin="4,0,4,12" Background="Transparent" MouseDown="OnTitleBarMouseDown">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <!-- Custom Window Title Bar -->
+                <Grid Grid.Row="0" Margin="4,0,4,12" Background="Transparent" MouseDown="OnTitleBarMouseDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="24" Height="24" CornerRadius="6" ClipToBounds="True" Margin="0,0,8,0">
-                        <Image Source="/Assets/logo.jpg" Stretch="UniformToFill"/>
-                    </Border>
-                    <TextBlock Text="代理控制台" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryTextBrush}"/>
-                </StackPanel>
-
-                <!-- Window Control Buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Click="OnMinimizeClick" Style="{StaticResource IconButtonCategoryStyle}" Width="28" Height="28">
-                        <Path Data="M0,0 L10,0" Stroke="#4B5563" StrokeThickness="1.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Button>
-                    <Button Click="OnCloseClick" Style="{StaticResource IconButtonCategoryStyle}" Width="28" Height="28" Margin="4,0,0,0">
-                        <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="#4B5563" StrokeThickness="1.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Button>
-                </StackPanel>
-            </Grid>
-
-            <!-- MAIN TAB PAGES CONTENT -->
-            <Grid Grid.Row="1" Margin="4,0">
-
-                <!-- TAB 0: 首页 (Home - One-Click Start) -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding IsHomeTabSelected, Converter={StaticResource BoolToVisConverter}}">
-                    <StackPanel>
-
-                        <!-- Xray Core Status Indicator Card -->
-                        <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,16">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Ellipse Width="10" Height="10" Fill="{Binding XrayStatusColor}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding XrayStatusText}" FontSize="13" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Center"/>
-                            </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="24" Height="24" CornerRadius="6" ClipToBounds="True" Margin="0,0,8,0">
+                            <Image Source="/Assets/logo.jpg" Stretch="UniformToFill"/>
                         </Border>
-
-                        <!-- Header Status Card -->
-                        <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
-                            <StackPanel HorizontalAlignment="Center">
-
-                                <!-- One-Click Connection Power Button -->
-                                <Button Command="{Binding ToggleConnectionCommand}"
-                                        Width="148" Height="148"
-                                        Margin="0,12,0,16"
-                                        Cursor="Hand">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Grid>
-                                                <!-- Glowing Outer Ring -->
-                                                <Ellipse x:Name="outerRing" Width="148" Height="148" Fill="#DCFCE7" Opacity="0.8"/>
-
-                                                <!-- Inner Action Circle -->
-                                                <Ellipse x:Name="innerCircle" Width="122" Height="122" Fill="#10B981">
-                                                    <Ellipse.Effect>
-                                                        <DropShadowEffect BlurRadius="14" ShadowDepth="4" Opacity="0.25" Color="#10B981"/>
-                                                    </Ellipse.Effect>
-                                                </Ellipse>
-
-                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <Path x:Name="powerIcon" Data="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.26 1.07-4.27 2.75-5.56l-1.42-1.42C4.38 6.77 3 9.22 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.78-1.38-5.23-3.17-6.83z"
-                                                          Fill="#FFFFFF" Width="34" Height="34" HorizontalAlignment="Center"/>
-                                                    <TextBlock x:Name="btnText" Text="已连接" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,6,0,0" HorizontalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Grid>
-
-                                            <ControlTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding IsConnected}" Value="False">
-                                                    <Setter TargetName="outerRing" Property="Fill" Value="#DBEAFE"/>
-                                                    <Setter TargetName="innerCircle" Property="Fill" Value="#2563EB"/>
-                                                    <Setter TargetName="btnText" Property="Text" Value="启动代理"/>
-                                                </DataTrigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="innerCircle" Property="Opacity" Value="0.9"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
-
-                                <TextBlock Text="{Binding ConnectStatusTitle}" FontSize="18" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding ConnectStatusSubtitle}" FontSize="12" Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Selected Server Card -->
-                        <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,16">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel>
-                                    <TextBlock Text="当前选中的节点" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding SelectedServer.Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                        <TextBlock Text="{Binding SelectedServer.Address}" FontSize="12" Foreground="#6B7280" Margin="0,0,8,0"/>
-                                        <TextBlock Text="{Binding SelectedServer.Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                    <TextBlock Text="{Binding SelectedServer.LatencyDisplay}" FontSize="16" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Right"/>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- AI Unlock Status Card -->
-                        <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16">
-                            <StackPanel>
-                                <TextBlock Text="AI 访问解锁检测" FontSize="13" Foreground="#6B7280" Margin="0,0,0,12"/>
-                                <UniformGrid Columns="3">
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,6,0"
-                                            Tag="OpenAI"
-                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
-                                            >
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="OpenAI" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="3,0,3,0"
-                                            Tag="Claude"
-                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
-                                    >
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="Claude" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
-                                            Tag="Gemini"
-                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
-                                    >
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="Gemini" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
-                                            Tag="youtube"
-                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
-                                    >
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="youtube" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6,0,0,0"
-                                            Tag="google"
-                                            MouseLeftButtonUp="AiCard_MouseLeftButtonUp"
-                                    >
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="google" FontSize="12" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                    </StackPanel>
-                </ScrollViewer>
-
-                <!-- TAB 1: 节点 (Node List) -->
-                <Grid Visibility="{Binding IsNodesTabSelected, Converter={StaticResource BoolToVisConverter}}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827"/>
+                        <TextBlock Text="代理控制台" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryTextBrush}"/>
                     </StackPanel>
 
-                    <!-- Nodes ListBox -->
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding Servers}"
-                             SelectedItem="{Binding SelectedServer}"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Background" Value="#FFFFFF"/>
-                                <Setter Property="Margin" Value="0,0,0,8"/>
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="ListBoxItem">
-                                            <Border x:Name="itemBorder"
-                                                    Background="#FFFFFF"
-                                                    BorderBrush="#E5E7EB"
-                                                    BorderThickness="1"
-                                                    CornerRadius="10"
-                                                    Padding="14,12">
-                                                <ContentPresenter/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="itemBorder" Property="Background" Value="#F9FAFB"/>
-                                                </Trigger>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="itemBorder" Property="Background" Value="#F3F4F6"/>
-                                                    <Setter TargetName="itemBorder" Property="BorderBrush" Value="#2563EB"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.InputBindings>
-                                        <MouseBinding MouseAction="RightClick"
-                                                      Command="{Binding DataContext.SelectNodeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                      CommandParameter="{Binding}"/>
-                                    </Grid.InputBindings>
-
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="#111827"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding Address}" FontSize="12" Foreground="#6B7280" Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding Port}" FontSize="12" Foreground="#6B7280" Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding LatencyDisplay}" FontSize="14" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Right"/>
-                                        <Border VerticalAlignment="Center" CornerRadius="4" Background="#15803D" Padding="6,2" Margin="0,4,0,0">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock Text="已连接" Foreground="#FFFFFF" FontSize="11" FontWeight="Medium"/>
-                                        </Border>
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <!-- Window Control Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button Click="OnMinimizeClick" Style="{StaticResource IconButtonCategoryStyle}" Width="28" Height="28">
+                            <Path Data="M0,0 L10,0" Stroke="#4B5563" StrokeThickness="1.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Button>
+                        <Button Click="OnCloseClick" Style="{StaticResource IconButtonCategoryStyle}" Width="28" Height="28" Margin="4,0,0,0">
+                            <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="#4B5563" StrokeThickness="1.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
-                <!-- TAB 2: 订阅 (Subscriptions Page) -->
-                <Grid Visibility="{Binding IsSubscriptionsTabSelected, Converter={StaticResource BoolToVisConverter}}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <!-- MAIN TAB PAGES CONTENT -->
+                <Grid Grid.Row="1" Margin="4,0" x:Name="TabContainer">
 
-                    <Grid Grid.Row="0" Margin="0,0,0,14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="订阅管理" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
-                                Background="#2563EB" Foreground="#FFFFFF" Padding="14,8"
-                                FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
-                    </Grid>
+                    <!-- TAB 0: 首页 (Home - One-Click Start) -->
+                    <ScrollViewer x:Name="HomeTabGrid" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsHomeTabSelected, Converter={StaticResource BoolToVisConverter}}">
+                        <ScrollViewer.RenderTransform>
+                            <TranslateTransform x:Name="HomeTabTransform" X="0" Y="0"/>
+                        </ScrollViewer.RenderTransform>
+                        <StackPanel>
 
-                    <!-- Subscriptions List -->
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding Subscriptions}"
-                             SelectedItem="{Binding SelectedSubscription}"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             HorizontalContentAlignment="Stretch"
-                             VerticalContentAlignment="Stretch"
-                             VerticalAlignment="Stretch">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Background" Value="#FFFFFF"/>
-                                <Setter Property="Margin" Value="0,0,0,10"/>
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="ListBoxItem">
-                                            <Border x:Name="border" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12" Padding="16">
-                                                <ContentPresenter/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="border" Property="BorderBrush" Value="#2563EB"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
+                            <!-- Xray Core & System Proxy Status Indicator Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -374,304 +97,816 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <Grid Grid.Row="0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"/>
-                                        <Border Grid.Column="1" Background="#DCFCE7" CornerRadius="6" Padding="8,3">
-                                            <TextBlock Text="{Binding NodeCount, StringFormat={}{0} 个节点}" FontSize="12" FontWeight="Bold" Foreground="#15803D"/>
-                                        </Border>
+                                    <!-- Xray Core Status -->
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <Ellipse Width="8" Height="8" Fill="{Binding XrayStatusColor}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding XrayStatusText}" FontSize="13" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <!-- Divider -->
+                                    <Border Grid.Row="1" Height="1" Background="#F3F4F6" Margin="0,2,0,8"/>
+
+                                    <!-- System Proxy Switch -->
+                                    <DockPanel Grid.Row="2">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <Ellipse Width="8" Height="8" Fill="{Binding SystemProxyStatusColor}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SystemProxyStatusText}" FontSize="13" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding IsSystemProxyEnabled}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                      ToolTip="切换 Windows 系统代理 (HTTP 127.0.0.1:10809)"/>
+                                    </DockPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- LAN & Proxy Address Info Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- LAN IP & Listen Port Info -->
+                                    <DockPanel Grid.Row="0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="🌐 局域网地址:" FontSize="13" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding LanIpAddress}" FontSize="13" FontWeight="Bold" Foreground="#2563EB"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                            <TextBlock Text="复合端口:10909" FontSize="11" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <!-- Divider -->
+                                    <Border Grid.Row="1" Height="1" Background="#F3F4F6" Margin="0,8,0,8"/>
+
+                                    <!-- Allow LAN Access Switch -->
+                                    <DockPanel Grid.Row="2">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="允许局域网连接 (Allow LAN)" FontSize="13" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="{Binding AllowLanStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding AllowLan}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                      ToolTip="允许同局域网的其他设备通过本机的 IP 使用代理"/>
+                                    </DockPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Routing Mode Card (智能分流 / 全局代理 Switch) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                                <DockPanel>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                        <TextBlock Text="路由模式" FontSize="13" FontWeight="SemiBold" Foreground="#111827"/>
+                                        <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                  IsChecked="{Binding IsGlobalMode}"
+                                                  DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                  ToolTip="切换智能分流（开启大陆直连）与全局代理"/>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Header Status Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
+                                <StackPanel HorizontalAlignment="Center">
+
+                                    <!-- One-Click Connection Power Button with Breathing Pulse & Scale Animations -->
+                                    <Button Command="{Binding ToggleConnectionCommand}"
+                                            Width="148" Height="148"
+                                            Margin="0,12,0,16"
+                                            Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Grid x:Name="btnGrid">
+                                                    <!-- Glowing Outer Ring with Breathing Animation -->
+                                                    <Ellipse x:Name="outerRing" Width="148" Height="148" Fill="#DCFCE7" Opacity="0.8" RenderTransformOrigin="0.5,0.5">
+                                                        <Ellipse.RenderTransform>
+                                                            <ScaleTransform x:Name="pulseScale" ScaleX="1.0" ScaleY="1.0"/>
+                                                        </Ellipse.RenderTransform>
+                                                    </Ellipse>
+
+                                                    <!-- Inner Action Circle -->
+                                                    <Ellipse x:Name="innerCircle" Width="122" Height="122" Fill="#10B981" RenderTransformOrigin="0.5,0.5">
+                                                        <Ellipse.Effect>
+                                                            <DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.3" Color="#10B981"/>
+                                                        </Ellipse.Effect>
+                                                        <Ellipse.RenderTransform>
+                                                            <ScaleTransform x:Name="innerScale" ScaleX="1.0" ScaleY="1.0"/>
+                                                        </Ellipse.RenderTransform>
+                                                    </Ellipse>
+
+                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                        <Path x:Name="powerIcon" Data="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.26 1.07-4.27 2.75-5.56l-1.42-1.42C4.38 6.77 3 9.22 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.78-1.38-5.23-3.17-6.83z"
+                                                              Fill="#FFFFFF" Width="34" Height="34" HorizontalAlignment="Center"/>
+                                                        <TextBlock x:Name="btnText" Text="已连接" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,6,0,0" HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsConnected}" Value="False">
+                                                        <Setter TargetName="outerRing" Property="Fill" Value="#DBEAFE"/>
+                                                        <Setter TargetName="innerCircle" Property="Fill" Value="#2563EB"/>
+                                                        <Setter TargetName="btnText" Property="Text" Value="启动代理"/>
+                                                    </DataTrigger>
+
+                                                    <!-- Breathing Pulse Animation when Connected -->
+                                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard x:Name="pulseStory">
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetName="pulseScale" Storyboard.TargetProperty="ScaleX" From="1.0" To="1.07" Duration="0:0:1.2"/>
+                                                                    <DoubleAnimation Storyboard.TargetName="pulseScale" Storyboard.TargetProperty="ScaleY" From="1.0" To="1.07" Duration="0:0:1.2"/>
+                                                                    <DoubleAnimation Storyboard.TargetName="outerRing" Storyboard.TargetProperty="Opacity" From="0.8" To="0.35" Duration="0:0:1.2"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                        <DataTrigger.ExitActions>
+                                                            <StopStoryboard BeginStoryboardName="pulseStory"/>
+                                                        </DataTrigger.ExitActions>
+                                                    </DataTrigger>
+
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="innerCircle" Property="Opacity" Value="0.9"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter TargetName="innerCircle" Property="Opacity" Value="0.75"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+
+                                    <TextBlock Text="{Binding ConnectStatusTitle}" FontSize="18" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ConnectStatusSubtitle}" FontSize="12" Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Selected Server Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0" Margin="0,0,10,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Text="当前选中的节点" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding SelectedServer.Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"
+                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                        <DockPanel Grid.Row="2" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding SelectedServer.Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+                                            <TextBlock FontSize="12" Foreground="#6B7280" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                                                <Run Text="{Binding SelectedServer.Address}"/><Run Text=":"/><Run Text="{Binding SelectedServer.Port}"/>
+                                            </TextBlock>
+                                        </DockPanel>
                                     </Grid>
 
-                                    <TextBlock Grid.Row="1" Text="{Binding Url}" FontSize="12" Foreground="#6B7280" TextTrimming="CharacterEllipsis" Margin="0,6,0,12"/>
+                                    <!-- Clickable Latency Speed Test Badge -->
+                                    <Button Grid.Column="1" Command="{Binding RefreshLatencyCommand}" Style="{StaticResource IconButtonCategoryStyle}" VerticalAlignment="Center" ToolTip="点击测速">
+                                        <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="10,6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="⚡ " FontSize="13"/>
+                                                <TextBlock Text="{Binding SelectedServer.LatencyDisplay}" FontSize="14" FontWeight="Bold" Foreground="{Binding SelectedServer.LatencyColor}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                </Grid>
+                            </Border>
 
-                                    <Grid Grid.Row="2">
+                            <!-- AI Unlock Status Card (首页 AI 访问解锁检测) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,12">
+                                        <TextBlock Text="AI 访问解锁检测" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                        <Button Command="{Binding TestAllAiUnlockCommand}"
+                                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                FontSize="11" Padding="8,3" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                    <Setter Property="Content" Value="⚡ 一键检测"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsTestingAiUnlock}" Value="True">
+                                                            <Setter Property="Content" Value="⏳ 检测中..."/>
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                            <Setter Property="Background" Value="#E5E7EB"/>
+                                                            <Setter Property="Foreground" Value="#6B7280"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </DockPanel>
+
+                                    <ItemsControl ItemsSource="{Binding AiUnlockItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border x:Name="aiCardBorder" Background="#F9FAFB" BorderBrush="{Binding StatusBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10,8" Margin="3" Cursor="Hand" ToolTip="点击检测该平台解锁与延迟" RenderTransformOrigin="0.5,0.5">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform x:Name="aiCardScale" ScaleX="1.0" ScaleY="1.0"/>
+                                                    </Border.RenderTransform>
+                                                    <Border.InputBindings>
+                                                        <MouseBinding MouseAction="LeftClick"
+                                                                      Command="{Binding DataContext.TestAiUnlockItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                      CommandParameter="{Binding}"/>
+                                                    </Border.InputBindings>
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <!-- Top Row: Name and Top-Right Status Badge with Rotating Spinner Animation -->
+                                                        <DockPanel Grid.Row="0">
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+
+                                                            <Border DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                    Background="{Binding StatusBadgeBackground}" CornerRadius="8" Padding="5,2">
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <Grid Margin="0,0,4,0" VerticalAlignment="Center">
+                                                                        <!-- Static Color Dot (shown when NOT testing) -->
+                                                                        <Ellipse x:Name="statusDot" Width="6" Height="6" Fill="{Binding StatusColor}" VerticalAlignment="Center"/>
+
+                                                                        <!-- Rotating Loading Spinner Ring (shown when Testing) -->
+                                                                        <Path x:Name="spinnerPath" Data="M6 1A5 5 0 1 0 11 6A5 5 0 0 0 6 1"
+                                                                              Width="8" Height="8"
+                                                                              Stroke="#F59E0B" StrokeThickness="1.5"
+                                                                              StrokeDashArray="2 1"
+                                                                              Visibility="Collapsed"
+                                                                              RenderTransformOrigin="0.5,0.5">
+                                                                            <Path.RenderTransform>
+                                                                                <RotateTransform x:Name="spinnerTransform" Angle="0"/>
+                                                                            </Path.RenderTransform>
+                                                                            <Path.Triggers>
+                                                                                <EventTrigger RoutedEvent="Loaded">
+                                                                                    <BeginStoryboard>
+                                                                                        <Storyboard RepeatBehavior="Forever">
+                                                                                            <DoubleAnimation Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)"
+                                                                                                             From="0" To="360" Duration="0:0:0.8"/>
+                                                                                        </Storyboard>
+                                                                                    </BeginStoryboard>
+                                                                                </EventTrigger>
+                                                                            </Path.Triggers>
+                                                                        </Path>
+                                                                    </Grid>
+
+                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10" FontWeight="Bold" Foreground="{Binding StatusColor}" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DockPanel>
+
+                                                        <!-- Bottom Row: Speed Test Latency -->
+                                                        <TextBlock Grid.Row="1" Text="{Binding LatencyText}" FontSize="11" Foreground="#6B7280" Margin="0,6,0,0"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsTesting}" Value="True">
+                                                        <Setter TargetName="statusDot" Property="Visibility" Value="Collapsed"/>
+                                                        <Setter TargetName="spinnerPath" Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Version & Memory Info Card -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,16,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="ℹ️ 版本:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding AppVersionText}" FontSize="12" FontWeight="SemiBold" Foreground="#2563EB"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <TextBlock Text="⚡ 内存:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding MemoryUsageText}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- TAB 1: 节点 (Node List) -->
+                    <Grid x:Name="NodesTabGrid" Visibility="{Binding IsNodesTabSelected, Converter={StaticResource BoolToVisConverter}}">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="NodesTabTransform" X="0" Y="0"/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                            <Button Command="{Binding TestAllNodesLatencyCommand}"
+                                    Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                    FontSize="12" FontWeight="Bold" Padding="12,6" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                        <Setter Property="Content" Value="⚡ 一键测速"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTestingAllNodes}" Value="True">
+                                                <Setter Property="Content" Value="⏳ 测速中..."/>
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                                <Setter Property="Background" Value="#E5E7EB"/>
+                                                <Setter Property="Foreground" Value="#6B7280"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </DockPanel>
+
+                        <!-- Nodes ListBox -->
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding Servers}"
+                                 SelectedItem="{Binding SelectedServer}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Background" Value="#FFFFFF"/>
+                                    <Setter Property="Margin" Value="0,0,0,8"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="itemBorder"
+                                                        Background="#FFFFFF"
+                                                        BorderBrush="#E5E7EB"
+                                                        BorderThickness="1"
+                                                        CornerRadius="10"
+                                                        Padding="14,12">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="itemBorder" Property="Background" Value="#F9FAFB"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="itemBorder" Property="Background" Value="#F3F4F6"/>
+                                                        <Setter TargetName="itemBorder" Property="BorderBrush" Value="#2563EB"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick"
+                                                          Command="{Binding DataContext.SelectNodeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                          CommandParameter="{Binding}"/>
+                                        </Grid.InputBindings>
+
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Text="{Binding LastUpdatedDisplay, StringFormat=上次更新: {0}}" FontSize="11" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                                        <Grid Grid.Column="0" Margin="0,0,10,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="#111827"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                            <DockPanel Grid.Row="1" Margin="0,4,0,0">
+                                                <TextBlock Text="{Binding Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+                                                <TextBlock FontSize="12" Foreground="#6B7280" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                                                    <Run Text="{Binding Address}"/><Run Text=":"/><Run Text="{Binding Port}"/>
+                                                </TextBlock>
+                                            </DockPanel>
+                                        </Grid>
 
-                                        <!-- Card Operation Buttons -->
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                            <!-- Edit Button -->
-                                            <Button Content="✏️ 编辑"
-                                                    Command="{Binding DataContext.EditSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                    CommandParameter="{Binding}"
-                                                    Style="{StaticResource ModernButtonStyle}"
-                                                    Padding="10,5" FontSize="12" Margin="0,0,6,0"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <!-- Single Node Latency Test Button -->
+                                            <Button Command="{Binding DataContext.TestNodeLatencyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}" Style="{StaticResource IconButtonCategoryStyle}" ToolTip="点击测试该节点延迟">
+                                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="6" Padding="8,4">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="⚡ " FontSize="11"/>
+                                                        <TextBlock Text="{Binding LatencyDisplay}" FontSize="13" FontWeight="Bold" Foreground="{Binding LatencyColor}"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Button>
 
-                                            <!-- Refresh Button -->
-                                            <Button Command="{Binding DataContext.UpdateSubscriptionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="10,5" FontSize="12" Margin="0,0,6,0">
-                                                <Button.Style>
-                                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                                        <Setter Property="Background" Value="#EFF6FF"/>
-                                                        <Setter Property="Foreground" Value="#2563EB"/>
-                                                        <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                                            <Border VerticalAlignment="Center" CornerRadius="4" Background="#15803D" Padding="6,2" Margin="6,0,0,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                <Setter Property="IsEnabled" Value="False"/>
-                                                                <Setter Property="Background" Value="#E5E7EB"/>
-                                                                <Setter Property="Foreground" Value="#6B7280"/>
+                                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </Button.Style>
-                                                <Button.Template>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                                <TextBlock x:Name="icon" Text="🔄 " FontSize="12"/>
-                                                                <TextBlock x:Name="txt" Text="更新" FontSize="12" FontWeight="Medium"/>
-                                                            </StackPanel>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                <Setter TargetName="icon" Property="Text" Value="⏳ "/>
-                                                                <Setter TargetName="txt" Property="Text" Value="更新中..."/>
-                                                            </DataTrigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Button.Template>
-                                            </Button>
-
-                                            <!-- Delete Button -->
-                                            <Button Content="🗑️ 删除"
-                                                    Command="{Binding DataContext.DeleteSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5"
-                                                    Style="{StaticResource ModernButtonStyle}"
-                                                    Padding="10,5" FontSize="12"/>
+                                                </Border.Style>
+                                                <TextBlock Text="已连接" Foreground="#FFFFFF" FontSize="11" FontWeight="Medium"/>
+                                            </Border>
                                         </StackPanel>
                                     </Grid>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-
-                <!-- TAB 3: 日志 (Logs Page) -->
-                <Grid Visibility="{Binding IsLogsTabSelected, Converter={StaticResource BoolToVisConverter}}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Top Bar: Title & Logging Performance Toggle & Clear Buttons -->
-                    <Grid Grid.Row="0" Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="运行日志" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Content="{Binding LoggingStatusText}" Command="{Binding ToggleLoggingCommand}"
-                                    Background="#F3F4F6" Foreground="#374151" BorderBrush="#D1D5DB" Padding="12,6"
-                                    FontSize="12" FontWeight="Medium" Style="{StaticResource ModernButtonStyle}" Margin="0,0,6,0"/>
-                            <Button Content="清空系统" Command="{Binding ClearSystemLogsCommand}"
-                                    Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5" Padding="10,6"
-                                    FontSize="12" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" Margin="0,0,6,0"/>
-                            <Button Content="清空内核" Command="{Binding ClearCoreLogsCommand}"
-                                    Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5" Padding="10,6"
-                                    FontSize="12" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
-                        </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
 
-                    <!-- Sub-bar: Log Type Toggle & Auto Scroll -->
-                    <Grid Grid.Row="1" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- TAB 2: 订阅 (Subscriptions Page) -->
+                    <Grid x:Name="SubscriptionsTabGrid" Visibility="{Binding IsSubscriptionsTabSelected, Converter={StaticResource BoolToVisConverter}}">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="SubscriptionsTabTransform" X="0" Y="0"/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <RadioButton Content="系统日志" IsChecked="True" GroupName="LogTypeGroup" x:Name="RadioSys" Margin="0,0,12,0" FontWeight="Medium"/>
-                            <RadioButton Content="内核日志 (Xray)" GroupName="LogTypeGroup" x:Name="RadioCore" FontWeight="Medium"/>
-                        </StackPanel>
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="订阅管理" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
+                                    Background="#2563EB" Foreground="#FFFFFF" Padding="14,8"
+                                    FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+                        </Grid>
 
-                        <CheckBox Grid.Column="2" Content="自动滚动到底部" IsChecked="{Binding IsAutoScrollEnabled}" VerticalAlignment="Center" FontSize="12" Foreground="#4B5563"/>
+                        <!-- Subscriptions List -->
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding Subscriptions}"
+                                 SelectedItem="{Binding SelectedSubscription}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 HorizontalContentAlignment="Stretch"
+                                 VerticalContentAlignment="Stretch"
+                                 VerticalAlignment="Stretch">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Background" Value="#FFFFFF"/>
+                                    <Setter Property="Margin" Value="0,0,0,10"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="border" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12" Padding="16">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="#2563EB"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"/>
+                                            <Border Grid.Column="1" Background="#DCFCE7" CornerRadius="6" Padding="8,3">
+                                                <TextBlock Text="{Binding NodeCount, StringFormat={}{0} 个节点}" FontSize="12" FontWeight="Bold" Foreground="#15803D"/>
+                                            </Border>
+                                        </Grid>
+
+                                        <TextBlock Grid.Row="1" Text="{Binding Url}" FontSize="12" Foreground="#6B7280" TextTrimming="CharacterEllipsis" Margin="0,6,0,12"/>
+
+                                        <Grid Grid.Row="2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding LastUpdatedDisplay, StringFormat=上次更新: {0}}" FontSize="11" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+
+                                            <!-- Card Operation Buttons -->
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <!-- Edit Button -->
+                                                <Button Content="✏️ 编辑"
+                                                        Command="{Binding DataContext.EditSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource ModernButtonStyle}"
+                                                        Padding="10,5" FontSize="12" Margin="0,0,6,0"/>
+
+                                                <!-- Refresh Button -->
+                                                <Button Command="{Binding DataContext.UpdateSubscriptionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="10,5" FontSize="12" Margin="0,0,6,0">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                            <Setter Property="Background" Value="#EFF6FF"/>
+                                                            <Setter Property="Foreground" Value="#2563EB"/>
+                                                            <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                    <Setter Property="Background" Value="#E5E7EB"/>
+                                                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                    <TextBlock x:Name="icon" Text="🔄 " FontSize="12"/>
+                                                                    <TextBlock x:Name="txt" Text="更新" FontSize="12" FontWeight="Medium"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                    <Setter TargetName="icon" Property="Text" Value="⏳ "/>
+                                                                    <Setter TargetName="txt" Property="Text" Value="更新中..."/>
+                                                                </DataTrigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+
+                                                <!-- Delete Button -->
+                                                <Button Content="🗑️ 删除"
+                                                        Command="{Binding DataContext.DeleteSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5"
+                                                        Style="{StaticResource ModernButtonStyle}"
+                                                        Padding="10,5" FontSize="12"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
 
-                    <!-- System Logs Container -->
-                    <Border Grid.Row="2"
-                            Background="#FFFFFF"
-                            BorderBrush="#E5E7EB"
-                            BorderThickness="1"
-                            CornerRadius="14"
-                            Padding="8"
-                            VerticalAlignment="Stretch"
-                            HorizontalAlignment="Stretch">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked, ElementName=RadioCore}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <ScrollViewer x:Name="SystemLogScrollViewer"
-                                      VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl ItemsSource="{Binding SystemLogLines}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border BorderBrush="#F3F4F6" BorderThickness="0,0,0,1" Padding="6,5">
-                                            <TextBlock Text="{Binding}" FontSize="12" Foreground="#374151" TextWrapping="Wrap"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
+                    <!-- TAB 3: 日志 (Logs Page) -->
+                    <Grid x:Name="LogsTabGrid" Visibility="{Binding IsLogsTabSelected, Converter={StaticResource BoolToVisConverter}}">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="LogsTabTransform" X="0" Y="0"/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <!-- Core Logs Container -->
-                    <Border Grid.Row="2"
-                            Background="#FFFFFF"
-                            BorderBrush="#E5E7EB"
-                            BorderThickness="1"
-                            CornerRadius="14"
-                            Padding="8"
-                            VerticalAlignment="Stretch"
-                            HorizontalAlignment="Stretch">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked, ElementName=RadioCore}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <ScrollViewer x:Name="CoreLogScrollViewer"
-                                      VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl ItemsSource="{Binding CoreLogLines}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border BorderBrush="#F3F4F6" BorderThickness="0,0,0,1" Padding="6,5">
-                                            <TextBlock Text="{Binding}" FontSize="12" Foreground="#10B981" TextWrapping="Wrap"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
+                        <!-- Top Bar: Title & Logging Performance Toggle & Clear Buttons -->
+                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="运行日志" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
 
-                    <TextBlock Grid.Row="3" Text="提示：系统日志与内核日志独立隔离，各保留最近 100 条" FontSize="11" Foreground="#9CA3AF" Margin="0,8,0,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="{Binding LoggingStatusText}" Command="{Binding ToggleLoggingCommand}"
+                                        Background="#F3F4F6" Foreground="#374151" BorderBrush="#D1D5DB" Padding="12,6"
+                                        FontSize="12" FontWeight="Medium" Style="{StaticResource ModernButtonStyle}" Margin="0,0,6,0"/>
+                                <Button Content="清空系统" Command="{Binding ClearSystemLogsCommand}"
+                                        Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5" Padding="10,6"
+                                        FontSize="12" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" Margin="0,0,6,0"/>
+                                <Button Content="清空内核" Command="{Binding ClearCoreLogsCommand}"
+                                        Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5" Padding="10,6"
+                                        FontSize="12" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Sub-bar: Log Type Toggle & Auto Scroll -->
+                        <Grid Grid.Row="1" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <RadioButton Content="系统日志" IsChecked="True" GroupName="LogTypeGroup" x:Name="RadioSys" Margin="0,0,12,0" FontWeight="Medium"/>
+                                <RadioButton Content="内核日志 (Xray)" GroupName="LogTypeGroup" x:Name="RadioCore" FontWeight="Medium"/>
+                            </StackPanel>
+
+                            <CheckBox Grid.Column="2" Content="自动滚动到底部" IsChecked="{Binding IsAutoScrollEnabled}" VerticalAlignment="Center" FontSize="12" Foreground="#4B5563"/>
+                        </Grid>
+
+                        <!-- System Logs Container -->
+                        <Border Grid.Row="2"
+                                Background="#FFFFFF"
+                                BorderBrush="#E5E7EB"
+                                BorderThickness="1"
+                                CornerRadius="14"
+                                Padding="8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=RadioCore}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <ScrollViewer x:Name="SystemLogScrollViewer"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding SystemLogLines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#F3F4F6" BorderThickness="0,0,0,1" Padding="6,5">
+                                                <TextBlock Text="{Binding}" FontSize="12" Foreground="#374151" TextWrapping="Wrap"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Core Logs Container -->
+                        <Border Grid.Row="2"
+                                Background="#FFFFFF"
+                                BorderBrush="#E5E7EB"
+                                BorderThickness="1"
+                                CornerRadius="14"
+                                Padding="8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=RadioCore}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <ScrollViewer x:Name="CoreLogScrollViewer"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding CoreLogLines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#F3F4F6" BorderThickness="0,0,0,1" Padding="6,5">
+                                                <TextBlock Text="{Binding}" FontSize="12" Foreground="#10B981" TextWrapping="Wrap"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+
+                        <TextBlock Grid.Row="3" Text="提示：系统日志与内核日志独立隔离，各保留最近 100 条" FontSize="11" Foreground="#9CA3AF" Margin="0,8,0,0"/>
+                    </Grid>
+
                 </Grid>
 
-            </Grid>
+                <!-- MOBILE-STYLE BOTTOM TAB NAVIGATION BAR -->
+                <Border Grid.Row="2"
+                        Background="#FFFFFF"
+                        BorderBrush="#E5E7EB"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="4,8"
+                        Margin="4,12,4,0">
+                    <UniformGrid Columns="4">
+                        <!-- Tab 0: 首页 -->
+                        <Button Command="{Binding SelectTabCommand}" CommandParameter="0" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Path x:Name="tabIcon" Data="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="首页" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsHomeTabSelected}" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
+                                            <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
 
-            <!-- MOBILE-STYLE BOTTOM TAB NAVIGATION BAR -->
-            <Border Grid.Row="2"
-                    Background="#FFFFFF"
-                    BorderBrush="#E5E7EB"
-                    BorderThickness="1"
-                    CornerRadius="14"
-                    Padding="4,8"
-                    Margin="4,12,4,0">
-                <UniformGrid Columns="4">
-                    <!-- Tab 0: 首页 -->
-                    <Button Command="{Binding SelectTabCommand}" CommandParameter="0" Cursor="Hand">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <Path x:Name="tabIcon" Data="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
-                                        <TextBlock x:Name="tabText" Text="首页" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsHomeTabSelected}" Value="True">
-                                        <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
-                                        <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
-                                    </DataTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                        <!-- Tab 1: 节点 -->
+                        <Button Command="{Binding SelectTabCommand}" CommandParameter="1" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Path x:Name="tabIcon" Data="M7 2v11h3v9l7-12h-4l4-8z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="节点" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsNodesTabSelected}" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
+                                            <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
 
-                    <!-- Tab 1: 节点 -->
-                    <Button Command="{Binding SelectTabCommand}" CommandParameter="1" Cursor="Hand">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <Path x:Name="tabIcon" Data="M7 2v11h3v9l7-12h-4l4-8z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
-                                        <TextBlock x:Name="tabText" Text="节点" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsNodesTabSelected}" Value="True">
-                                        <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
-                                        <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
-                                    </DataTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                        <!-- Tab 2: 订阅 -->
+                        <Button Command="{Binding SelectTabCommand}" CommandParameter="2" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Path x:Name="tabIcon" Data="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="订阅" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSubscriptionsTabSelected}" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
+                                            <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
 
-                    <!-- Tab 2: 订阅 -->
-                    <Button Command="{Binding SelectTabCommand}" CommandParameter="2" Cursor="Hand">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <Path x:Name="tabIcon" Data="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
-                                        <TextBlock x:Name="tabText" Text="订阅" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsSubscriptionsTabSelected}" Value="True">
-                                        <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
-                                        <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
-                                    </DataTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-
-                    <!-- Tab 3: 日志 -->
-                    <Button Command="{Binding SelectTabCommand}" CommandParameter="3" Cursor="Hand">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <Path x:Name="tabIcon" Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
-                                        <TextBlock x:Name="tabText" Text="日志" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsLogsTabSelected}" Value="True">
-                                        <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
-                                        <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
-                                        <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
-                                    </DataTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                </UniformGrid>
-            </Border>
+                        <!-- Tab 3: 日志 -->
+                        <Button Command="{Binding SelectTabCommand}" CommandParameter="3" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Path x:Name="tabIcon" Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" Fill="#6B7280" Width="20" Height="20" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="日志" FontSize="12" FontWeight="Medium" Foreground="#6B7280" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsLogsTabSelected}" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
+                                            <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </UniformGrid>
+                </Border>
             </Grid>
 
             <!-- Dark Frosted Backdrop Overlay Mask for Elevated Modals -->

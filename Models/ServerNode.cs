@@ -18,6 +18,7 @@ public class ServerNode : ViewModelBase
     private string _flow = "";
     private bool _isConnected;
     private int _latencyMs = -1; // -1: untested, 0: timeout
+    private bool _isTestingLatency = false;
     private bool _isOpenAiUnlocked = true;
     private bool _isClaudeUnlocked = true;
     private bool _isGeminiUnlocked = true;
@@ -114,6 +115,19 @@ public class ServerNode : ViewModelBase
             if (SetProperty(ref _latencyMs, value))
             {
                 OnPropertyChanged(nameof(LatencyDisplay));
+                OnPropertyChanged(nameof(LatencyColor));
+            }
+        }
+    }
+
+    public bool IsTestingLatency
+    {
+        get => _isTestingLatency;
+        set
+        {
+            if (SetProperty(ref _isTestingLatency, value))
+            {
+                OnPropertyChanged(nameof(LatencyDisplay));
             }
         }
     }
@@ -122,9 +136,23 @@ public class ServerNode : ViewModelBase
     {
         get
         {
+            if (_isTestingLatency) return "测速中...";
             if (_latencyMs < 0) return "-- ms";
             if (_latencyMs == 0 || _latencyMs > 9999) return "超时";
             return $"{_latencyMs} ms";
+        }
+    }
+
+    public string LatencyColor
+    {
+        get
+        {
+            if (_isTestingLatency) return "#F59E0B"; // 橙色
+            if (_latencyMs < 0) return "#9CA3AF";     // 灰色
+            if (_latencyMs == 0 || _latencyMs > 9999) return "#EF4444"; // 红色
+            if (_latencyMs < 150) return "#10B981";  // 绿色
+            if (_latencyMs < 300) return "#F59E0B";  // 黄色
+            return "#EF4444";                        // 红色
         }
     }
 

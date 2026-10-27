@@ -10,6 +10,7 @@ public class SqliteDataModel
     public List<SubscriptionItem> Subscriptions { get; set; } = new();
     public List<ServerNode> CachedServers { get; set; } = new();
     public string? SelectedServerId { get; set; }
+    public Dictionary<string, string> Settings { get; set; } = new();
 }
 
 public static class SqliteStorageService
@@ -135,18 +136,24 @@ public static class SqliteStorageService
                 }
             }
 
-            // 3. Load Settings (SelectedServerId)
+            // 3. Load Settings
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT Value FROM Settings WHERE Key = 'SelectedServerId'";
-                var res = await cmd.ExecuteScalarAsync();
-                if (res != null && res != DBNull.Value)
+                cmd.CommandText = "SELECT Key, Value FROM Settings";
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
                 {
-                    model.SelectedServerId = res.ToString();
+                    string k = reader.GetString(0);
+                    string v = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                    model.Settings[k] = v;
+                    if (k == "SelectedServerId")
+                    {
+                        model.SelectedServerId = v;
+                    }
                 }
             }
 
-            AppLogger.LogSystem($"[SQLite存储] 数据加载成功：包含 {model.Subscriptions.Count} 个订阅源，{model.CachedServers.Count} 个缓存节点。");
+            AppLogger.LogSystem($"[SQLite存储] 数据加载成功：包含 {model.Subscriptions.Count} 个订阅源，{model.CachedServers.Count} 个缓存节点，{model.Settings.Count} 项设置。");
         }
         catch (Exception ex)
         {
@@ -160,7 +167,7 @@ public static class SqliteStorageService
         return model;
     }
 
-    public static async Task SaveAsync(IEnumerable<SubscriptionItem> subscriptions, IEnumerable<ServerNode> servers, string? selectedServerId)
+    public static async Task SaveAsync(IEnumerable<SubscriptionItem> subscriptions, IEnumerable<ServerNode> servers, string? selectedServerId, Dictionary<string, string>? extraSettings = null)
     {
         await LockSlim.WaitAsync();
         try
@@ -236,6 +243,23 @@ public static class SqliteStorageService
                     ";
                     cmd.Parameters.AddWithValue("@Val", selectedServerId ?? (object)DBNull.Value);
                     await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Save Extra Settings
+                if (extraSettings != null)
+                {
+                    foreach (var kvp in extraSettings)
+                    {
+                        using var cmd = connection.CreateCommand();
+                        cmd.Transaction = transaction;
+                        cmd.CommandText = @"
+                            INSERT INTO Settings (Key, Value) VALUES (@Key, @Val)
+                            ON CONFLICT(Key) DO UPDATE SET Value = @Val;
+                        ";
+                        cmd.Parameters.AddWithValue("@Key", kvp.Key);
+                        cmd.Parameters.AddWithValue("@Val", kvp.Value ?? "");
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 await transaction.CommitAsync();

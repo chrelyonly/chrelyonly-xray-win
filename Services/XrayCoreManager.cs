@@ -15,9 +15,11 @@ public class XrayCoreManager
 
     public bool IsRunning => _xrayProcess != null && !_xrayProcess.HasExited;
 
-    public string GenerateClientConfig(ServerNode node)
+    public string GenerateClientConfig(ServerNode node, bool allowLan = false, bool isGlobalMode = false)
     {
-        AppLogger.LogSystem($"[XRAY核心] 正在为节点「{node.Name}」({node.Address}:{node.Port}, 协议: {node.Protocol}) 生成客户端配置...");
+        string listenAddress = allowLan ? "0.0.0.0" : "127.0.0.1";
+        string modeText = isGlobalMode ? "全局代理" : "智能分流";
+        AppLogger.LogSystem($"[XRAY核心] 正在为节点「{node.Name}」({node.Address}:{node.Port}, 协议: {node.Protocol}, 监听: {listenAddress}, 模式: {modeText}) 生成客户端配置...");
         string uuid = string.IsNullOrEmpty(node.Uuid) ? "d342d11e-d424-4583-b36e-524abb1f0cf4" : node.Uuid;
         string address = node.Address;
         int port = node.Port;
@@ -29,15 +31,61 @@ public class XrayCoreManager
             protocol = "vless";
         }
 
+        string routingJson = isGlobalMode ? @"
+  ""routing"": {
+    ""domainStrategy"": ""AsIs"",
+    ""rules"": [
+      {
+        ""type"": ""field"",
+        ""outboundTag"": ""proxy"",
+        ""network"": ""udp,tcp""
+      }
+    ]
+  }," : @"
+  ""routing"": {
+    ""domainStrategy"": ""IPIfNonMatch"",
+    ""rules"": [
+      {
+        ""type"": ""field"",
+        ""outboundTag"": ""block"",
+        ""domain"": [
+          ""geosite:category-ads-all""
+        ]
+      },
+      {
+        ""type"": ""field"",
+        ""outboundTag"": ""direct"",
+        ""domain"": [
+          ""geosite:cn"",
+          ""domain:cn""
+        ]
+      },
+      {
+        ""type"": ""field"",
+        ""outboundTag"": ""direct"",
+        ""ip"": [
+          ""geoip:private"",
+          ""geoip:cn""
+        ]
+      },
+      {
+        ""type"": ""field"",
+        ""outboundTag"": ""proxy"",
+        ""network"": ""udp,tcp""
+      }
+    ]
+  },";
+
         var configJson = $@"{{
   ""log"": {{
     ""loglevel"": ""warning""
   }},
+  {routingJson}
   ""inbounds"": [
     {{
       ""tag"": ""socks-in"",
       ""port"": 10808,
-      ""listen"": ""127.0.0.1"",
+      ""listen"": ""{listenAddress}"",
       ""protocol"": ""socks"",
       ""settings"": {{
         ""auth"": ""noauth"",
@@ -47,7 +95,7 @@ public class XrayCoreManager
     {{
       ""tag"": ""http-in"",
       ""port"": 10809,
-      ""listen"": ""127.0.0.1"",
+      ""listen"": ""{listenAddress}"",
       ""protocol"": ""http"",
       ""settings"": {{}}
     }}
