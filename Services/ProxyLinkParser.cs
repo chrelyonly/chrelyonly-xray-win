@@ -56,7 +56,7 @@ public static class ProxyLinkParser
             Ech = query["ech"] ?? "",
             Host = query["host"] ?? "",
             Path = query["path"] ?? "",
-            Email = query["path"] ?? "t@t.tt",
+            Email = query["Email"] ?? "t@t.tt",
         };
     }
     private static ServerNode ParseHy2(string url)
