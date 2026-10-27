@@ -652,12 +652,10 @@ public class MainViewModel : ViewModelBase
             AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点。");
             item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : 0;
             item.LastUpdated = DateTime.Now;
+            Servers.Clear();
             foreach (var node in fetchedNodes)
             {
-                if (!Servers.Any(s => s.Address == node.Address && s.Port == node.Port))
-                {
                     Servers.Add(node);
-                }
             }
 
             if (SelectedServer == null && Servers.Count > 0)
