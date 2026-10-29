@@ -126,7 +126,7 @@
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
                                                       IsChecked="{Binding IsSystemProxyEnabled}"
                                                       DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                      ToolTip="切换 Windows 系统代理 (HTTP 127.0.0.1:10809)"/>
+                                                      ToolTip="切换 Windows 系统代理 (HTTP 127.0.0.1:10909)"/>
                                     </DockPanel>
                                 </Grid>
                             </Border>
@@ -399,23 +399,180 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Traffic Speed Info Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,16,0,0">
+                            <!-- IP Prompt Card (本地IP与代理出口IP提示) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,16,0,0">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⬆️ 上传:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding UploadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB"/>
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                        <TextBlock Text="🌐 IP 与网络路由提示" FontSize="13" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                        <Button Command="{Binding RefreshIpInfoCommand}"
+                                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                FontSize="11" FontWeight="SemiBold" Padding="8,4" 
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                ToolTip="刷新本地公网 IP 与代理出口 IP">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                    <Setter Property="Content" Value="🔄 刷新 IP"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCheckingIp}" Value="True">
+                                                            <Setter Property="Content" Value="⏳ 查询中..."/>
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </DockPanel>
+
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="本地局域网 IP:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280" Width="95"/>
+                                        <TextBlock Text="{Binding LocalLanIpText}" FontSize="12" FontWeight="Bold" Foreground="#374151"/>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <TextBlock Text="⬇️ 下载:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding DownloadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="本地直连公网:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280" Width="95"/>
+                                        <TextBlock Text="{Binding LocalPublicIpText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
+
+                                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                                        <TextBlock Text="代理出口 IP:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280" Width="95"/>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock Text="{Binding OutboundIpText}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
+                                            <TextBlock Text="{Binding OutboundLocationText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Traffic Statistics Card (流量统计与累计上下传) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,16,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                        <TextBlock Text="📊 流量统计与实时网速" FontSize="13" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                        <Button Command="{Binding ResetTrafficCommand}"
+                                                Background="#FEF2F2" Foreground="#DC2626" BorderBrush="#FECACA"
+                                                FontSize="11" FontWeight="SemiBold" Padding="8,4" 
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                ToolTip="清空并重置当前累计上下传流量统计">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                    <Setter Property="Content" Value="🗑️ 重置流量"/>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </DockPanel>
+
+                                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                            <TextBlock Text="⬆️ 实时上传:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding UploadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <TextBlock Text="⬇️ 实时下载:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding DownloadSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#10B981" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                            <TextBlock Text="📦 总上传量:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding TotalUploadText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <TextBlock Text="📦 总下载量:" FontSize="12" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding TotalDownloadText}" FontSize="12" FontWeight="Bold" Foreground="#10B981" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <!-- Node Speed Test Card (节点 CacheFly 50MB 真实下载测速) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,16,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock Text="⚡ 节点真实下载测速 (50MB)" FontSize="13" FontWeight="Bold" Foreground="#111827"/>
+                                            <TextBlock Text="https://cachefly.cachefly.net/50mb.test" FontSize="10" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <Button Command="{Binding StartSpeedTestCommand}"
+                                                Background="#DCFCE7" Foreground="#15803D" BorderBrush="#BBF7D0"
+                                                FontSize="11" FontWeight="Bold" Padding="10,6" 
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                    <Setter Property="Content" Value="🚀 开始测速"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSpeedTesting}" Value="True">
+                                                            <Setter Property="Content" Value="⛔ 取消测速"/>
+                                                            <Setter Property="Background" Value="#FEE2E2"/>
+                                                            <Setter Property="Foreground" Value="#DC2626"/>
+                                                            <Setter Property="BorderBrush" Value="#FECACA"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </DockPanel>
+
+                                    <!-- Status & Progress -->
+                                    <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding SpeedTestStatusText}" FontSize="11" FontWeight="SemiBold" Foreground="#374151" DockPanel.Dock="Left"/>
+                                            <TextBlock Text="{Binding SpeedTestProgressText}" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                                        </DockPanel>
+                                        <ProgressBar Value="{Binding SpeedTestProgress}" Maximum="100" Height="7" Foreground="#2563EB" Background="#E5E7EB"/>
+                                    </StackPanel>
+
+                                    <!-- Speed Details Grid -->
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Orientation="Vertical">
+                                            <TextBlock Text="实时速率" FontSize="10" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding SpeedTestCurrentSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center">
+                                            <TextBlock Text="峰值速率" FontSize="10" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding SpeedTestPeakSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#10B981" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Right">
+                                            <TextBlock Text="平均速率" FontSize="10" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding SpeedTestAverageSpeedText}" FontSize="12" FontWeight="Bold" Foreground="#7C3AED" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </Grid>
                             </Border>
 
@@ -597,7 +754,7 @@
                                 <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
                                               IsChecked="{Binding IsUseProxyForSubUpdate}"
                                               VerticalAlignment="Center"
-                                              ToolTip="开启后通过本地代理 (127.0.0.1:10809) 更新订阅节点"/>
+                                              ToolTip="开启后通过本地代理 (127.0.0.1:10909) 更新订阅节点"/>
                             </StackPanel>
 
                             <Button Grid.Column="2" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"

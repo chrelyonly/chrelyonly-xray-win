@@ -374,7 +374,7 @@ private JsonArray BuildInbounds(string listenAddress)
                           [
                               {
                              "tag": "socks",
-                             "port": 10809,
+                             "port": 10909,
                              "listen": "{{listenAddress}}",
                              "protocol": "mixed",
                              "sniffing": {
@@ -692,7 +692,12 @@ private JsonObject BuildRouting(bool isGlobalMode)
             "type": "field",
             "outboundTag": "proxy",
             "domain": [
-              "geosite:google"
+              "geosite:google",
+              "domain:cachefly.net",
+              "domain:cachefly.com",
+              "domain:ip-api.com",
+              "domain:ip.sb",
+              "domain:ipify.org"
             ]
           },
           {

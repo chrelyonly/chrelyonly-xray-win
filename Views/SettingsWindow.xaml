@@ -34,9 +34,9 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="HTTP 代理端口" FontWeight="Medium" Foreground="#111827"/>
-                    <TextBlock Text="本地 HTTP 监听端口，默认 10809" FontSize="12" Foreground="#6B7280"/>
+                    <TextBlock Text="本地 HTTP 监听端口，默认 10909" FontSize="12" Foreground="#6B7280"/>
                 </StackPanel>
-                <TextBox Grid.Column="1" Text="10809" Width="80" Padding="6" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="10909" Width="80" Padding="6" VerticalAlignment="Center"/>
             </Grid>
 
             <Grid Margin="0,0,0,16">

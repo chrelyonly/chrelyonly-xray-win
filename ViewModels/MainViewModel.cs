@@ -29,6 +29,29 @@ public class MainViewModel : ViewModelBase
     private long _lastBytesSent = 0;
     private DateTime _lastTrafficCheckTime = DateTime.MinValue;
 
+    // Traffic Stats Accumulation
+    private long _totalSessionUploadedBytes = 0;
+    private long _totalSessionDownloadedBytes = 0;
+    private string _totalUploadText = "0 B";
+    private string _totalDownloadText = "0 B";
+
+    // Speed Test Fields
+    private bool _isSpeedTesting = false;
+    private double _speedTestProgress = 0;
+    private string _speedTestProgressText = "0.0 / 50.0 MB (0%)";
+    private string _speedTestCurrentSpeedText = "0 B/s";
+    private string _speedTestPeakSpeedText = "0 B/s";
+    private string _speedTestAverageSpeedText = "0 B/s";
+    private string _speedTestStatusText = "就绪 (准备节点测速)";
+    private CancellationTokenSource? _speedTestCts;
+
+    // IP Prompt Fields
+    private string _localLanIpText = SystemProxyManager.GetLocalLanIp();
+    private string _localPublicIpText = "点击刷新查询";
+    private string _outboundIpText = "点击刷新查询";
+    private string _outboundLocationText = "";
+    private bool _isCheckingIp = false;
+
     public string UploadSpeedText
     {
         get => _uploadSpeedText;
@@ -39,6 +62,90 @@ public class MainViewModel : ViewModelBase
     {
         get => _downloadSpeedText;
         set => SetProperty(ref _downloadSpeedText, value);
+    }
+
+    public string TotalUploadText
+    {
+        get => _totalUploadText;
+        set => SetProperty(ref _totalUploadText, value);
+    }
+
+    public string TotalDownloadText
+    {
+        get => _totalDownloadText;
+        set => SetProperty(ref _totalDownloadText, value);
+    }
+
+    public bool IsSpeedTesting
+    {
+        get => _isSpeedTesting;
+        set => SetProperty(ref _isSpeedTesting, value);
+    }
+
+    public double SpeedTestProgress
+    {
+        get => _speedTestProgress;
+        set => SetProperty(ref _speedTestProgress, value);
+    }
+
+    public string SpeedTestProgressText
+    {
+        get => _speedTestProgressText;
+        set => SetProperty(ref _speedTestProgressText, value);
+    }
+
+    public string SpeedTestCurrentSpeedText
+    {
+        get => _speedTestCurrentSpeedText;
+        set => SetProperty(ref _speedTestCurrentSpeedText, value);
+    }
+
+    public string SpeedTestPeakSpeedText
+    {
+        get => _speedTestPeakSpeedText;
+        set => SetProperty(ref _speedTestPeakSpeedText, value);
+    }
+
+    public string SpeedTestAverageSpeedText
+    {
+        get => _speedTestAverageSpeedText;
+        set => SetProperty(ref _speedTestAverageSpeedText, value);
+    }
+
+    public string SpeedTestStatusText
+    {
+        get => _speedTestStatusText;
+        set => SetProperty(ref _speedTestStatusText, value);
+    }
+
+    public string LocalLanIpText
+    {
+        get => _localLanIpText;
+        set => SetProperty(ref _localLanIpText, value);
+    }
+
+    public string LocalPublicIpText
+    {
+        get => _localPublicIpText;
+        set => SetProperty(ref _localPublicIpText, value);
+    }
+
+    public string OutboundIpText
+    {
+        get => _outboundIpText;
+        set => SetProperty(ref _outboundIpText, value);
+    }
+
+    public string OutboundLocationText
+    {
+        get => _outboundLocationText;
+        set => SetProperty(ref _outboundLocationText, value);
+    }
+
+    public bool IsCheckingIp
+    {
+        get => _isCheckingIp;
+        set => SetProperty(ref _isCheckingIp, value);
     }
 
     public ObservableCollection<ServerNode> Servers { get; } = new();
@@ -225,7 +332,7 @@ public class MainViewModel : ViewModelBase
         {
             if (value)
             {
-                var (isProxyActive, proxyServer, isOwn) = SystemProxyManager.CheckSystemProxyConflict(10809);
+                var (isProxyActive, proxyServer, isOwn) = SystemProxyManager.CheckSystemProxyConflict(10909);
                 if (isProxyActive && !isOwn)
                 {
                     AppLogger.LogSystem($"[系统代理冲突] 检测到当前系统代理已被第三方程序占用: {proxyServer}");
@@ -240,7 +347,7 @@ public class MainViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(SystemProxyStatusText));
                 OnPropertyChanged(nameof(SystemProxyStatusColor));
-                SystemProxyManager.SetSystemProxy(value, "127.0.0.1:10809");
+                SystemProxyManager.SetSystemProxy(value, "127.0.0.1:10909");
                 SaveState();
             }
         }
@@ -345,6 +452,12 @@ public class MainViewModel : ViewModelBase
     public RelayCommand EditSubDialogCommand { get; }
     public RelayCommand DeleteSubDialogCommand { get; }
     public RelayCommand UpdateSubscriptionCommand { get; }
+
+    // Traffic, Speed Test & IP Commands
+    public RelayCommand ResetTrafficCommand { get; }
+    public RelayCommand StartSpeedTestCommand { get; }
+    public RelayCommand CancelSpeedTestCommand { get; }
+    public RelayCommand RefreshIpInfoCommand { get; }
 
     public MainViewModel()
     {
@@ -569,7 +682,21 @@ public class MainViewModel : ViewModelBase
             }
         });
 
-        // 启动时初始化测速（不自动更新订阅，仅支持手动更新）
+        // 流量、测速与 IP 相关 Command 绑定
+        ResetTrafficCommand = new RelayCommand(() =>
+        {
+            _totalSessionUploadedBytes = 0;
+            _totalSessionDownloadedBytes = 0;
+            TotalUploadText = "0 B";
+            TotalDownloadText = "0 B";
+            AppLogger.LogSystem("[流量统计] 已重置累计上下传流量统计。");
+        });
+
+        StartSpeedTestCommand = new RelayCommand(async () => await StartSpeedTestAsync());
+        CancelSpeedTestCommand = new RelayCommand(CancelSpeedTest);
+        RefreshIpInfoCommand = new RelayCommand(async () => await RefreshIpInfoAsync());
+
+        // 启动时初始化测速与 IP 查询（不自动更新订阅，仅支持手动更新）
         _ = Task.Run(async () =>
         {
             await Task.Delay(1500); // 延迟 1.5 秒等待主窗口完全初始化
@@ -578,6 +705,7 @@ public class MainViewModel : ViewModelBase
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 await RefreshCurrentLatencyAsync();
+                await RefreshIpInfoAsync();
                 if (IsConnected)
                 {
                     await TestAllAiUnlockAsync();
@@ -640,11 +768,18 @@ public class MainViewModel : ViewModelBase
                     if (diffReceived < 0) diffReceived = 0;
                     if (diffSent < 0) diffSent = 0;
 
+                    // 累计总上下传流量
+                    _totalSessionDownloadedBytes += diffReceived;
+                    _totalSessionUploadedBytes += diffSent;
+
                     double downloadSpeed = diffReceived / seconds;
                     double uploadSpeed = diffSent / seconds;
 
                     DownloadSpeedText = FormatSpeed(downloadSpeed);
                     UploadSpeedText = FormatSpeed(uploadSpeed);
+
+                    TotalDownloadText = FormatBytes(_totalSessionDownloadedBytes);
+                    TotalUploadText = FormatBytes(_totalSessionUploadedBytes);
                 }
             }
 
@@ -656,6 +791,19 @@ public class MainViewModel : ViewModelBase
         {
             AppLogger.LogSystem($"[流量统计] 更新网速失败: {ex.Message}");
         }
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024 * 1024)
+            return $"{bytes / (1024.0 * 1024 * 1024 * 1024):F2} TB";
+        if (bytes >= 1024L * 1024 * 1024)
+            return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        if (bytes >= 1024L * 1024)
+            return $"{bytes / (1024.0 * 1024):F2} MB";
+        if (bytes >= 1024L)
+            return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes} B";
     }
 
     private string FormatSpeed(double bytesPerSecond)
@@ -730,6 +878,7 @@ public class MainViewModel : ViewModelBase
                             NotifyXrayStatusChanged();
                             _ = RefreshCurrentLatencyAsync();
                             _ = TestAllAiUnlockAsync();
+                            _ = RefreshIpInfoAsync();
                         }
                     });
                 });
@@ -745,13 +894,12 @@ public class MainViewModel : ViewModelBase
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     NotifyXrayStatusChanged();
+                    _ = RefreshIpInfoAsync();
                 });
             });
         }
 
         IsConnected = willBeConnected;
-        // 开关不操作系统代理配置
-        // IsSystemProxyEnabled = willBeConnected;
         if (SelectedServer != null)
         {
             foreach (var node in Servers)
@@ -767,6 +915,7 @@ public class MainViewModel : ViewModelBase
         {
             _ = RefreshCurrentLatencyAsync();
             _ = TestAllAiUnlockAsync();
+            _ = RefreshIpInfoAsync();
         }
     }
 
@@ -939,6 +1088,155 @@ public class MainViewModel : ViewModelBase
         {
             item.IsUpdating = false;
             IsSubUpdating = false;
+        }
+    }
+
+    public async Task StartSpeedTestAsync()
+    {
+        if (SelectedServer == null)
+        {
+            AppLogger.LogSystem("[节点测速] 提示：当前未选中任何节点。");
+            new Views.AlertWindow("测速提示", "请先在节点列表中选择一个需要测速的节点。", false).ShowDialog();
+            return;
+        }
+
+        if (IsSpeedTesting)
+        {
+            CancelSpeedTest();
+            return;
+        }
+
+        IsSpeedTesting = true;
+        SpeedTestProgress = 0;
+        SpeedTestProgressText = "0.0 / 50.0 MB (0%)";
+        SpeedTestCurrentSpeedText = "0 B/s";
+        SpeedTestPeakSpeedText = "0 B/s";
+        SpeedTestAverageSpeedText = "0 B/s";
+        SpeedTestStatusText = $"正在初始化针对节点「{SelectedServer.Name}」的测速...";
+
+        AppLogger.LogSystem($"[节点测速] 开始针对节点「{SelectedServer.Name}」({SelectedServer.Address}:{SelectedServer.Port}) 进行 CacheFly 50MB 真实下载测速...");
+
+        _speedTestCts = new CancellationTokenSource();
+        bool startedTempCore = false;
+
+        try
+        {
+            if (!_xrayManager.IsRunning)
+            {
+                AppLogger.LogSystem("[节点测速] Xray 内核未运行，正在临时启动内核进行节点测速...");
+                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode);
+                bool ok = _xrayManager.StartCore(configJson);
+                if (!ok)
+                {
+                    SpeedTestStatusText = "测速失败: 无法启动 Xray 内核";
+                    AppLogger.LogSystem("[节点测速] 错误: 无法启动 Xray 内核，测速终止。");
+                    IsSpeedTesting = false;
+                    return;
+                }
+                startedTempCore = true;
+                await Task.Delay(1000, _speedTestCts.Token);
+            }
+
+            var progress = new Progress<SpeedTestReport>(report =>
+            {
+                SpeedTestProgress = report.ProgressPercentage;
+                SpeedTestProgressText = $"{report.DownloadedBytes / (1024.0 * 1024.0):F1} / {report.TotalBytes / (1024.0 * 1024.0):F1} MB ({report.ProgressPercentage:F0}%)";
+                SpeedTestCurrentSpeedText = FormatSpeed(report.CurrentSpeedBytesPerSec);
+                SpeedTestPeakSpeedText = FormatSpeed(report.PeakSpeedBytesPerSec);
+                SpeedTestAverageSpeedText = FormatSpeed(report.AverageSpeedBytesPerSec);
+                SpeedTestStatusText = report.StatusText;
+            });
+
+            await SpeedTester.TestDownloadSpeedAsync(
+                SpeedTester.DefaultTestUrl,
+                "http://127.0.0.1:10909",
+                progress,
+                _speedTestCts.Token);
+
+            if (SelectedServer != null && !string.IsNullOrEmpty(SpeedTestAverageSpeedText))
+            {
+                AppLogger.LogSystem($"[节点测速] 节点「{SelectedServer.Name}」测速完成: 均速 {SpeedTestAverageSpeedText}, 峰值 {SpeedTestPeakSpeedText}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            SpeedTestStatusText = "测速已手动取消";
+            AppLogger.LogSystem("[节点测速] 用户手动取消了测速。");
+        }
+        catch (Exception ex)
+        {
+            SpeedTestStatusText = $"测速异常: {ex.Message}";
+            AppLogger.LogSystem($"[节点测速] 测速过程中发生异常: {ex.Message}");
+        }
+        finally
+        {
+            if (startedTempCore && !IsConnected)
+            {
+                AppLogger.LogSystem("[节点测速] 测速完成，清理临时启动的 Xray 内核服务...");
+                _xrayManager.StopCore();
+            }
+            IsSpeedTesting = false;
+            _speedTestCts?.Dispose();
+            _speedTestCts = null;
+        }
+    }
+
+    public void CancelSpeedTest()
+    {
+        if (_speedTestCts != null && !_speedTestCts.IsCancellationRequested)
+        {
+            _speedTestCts.Cancel();
+            AppLogger.LogSystem("[节点测速] 正在请求取消测速...");
+        }
+    }
+
+    public async Task RefreshIpInfoAsync()
+    {
+        if (IsCheckingIp) return;
+        IsCheckingIp = true;
+        AppLogger.LogSystem("[IP查询] 开始刷新本地 IP 与出口 IP 信息...");
+
+        LocalLanIpText = SystemProxyManager.GetLocalLanIp();
+        LocalPublicIpText = "正在查询...";
+        OutboundIpText = "正在查询...";
+        OutboundLocationText = "";
+
+        try
+        {
+            var localTask = IpQueryService.GetLocalPublicIpAsync();
+
+            Task<IpInfo>? outboundTask = null;
+            if (_xrayManager.IsRunning)
+            {
+                outboundTask = IpQueryService.GetOutboundIpAsync("http://127.0.0.1:10909");
+            }
+
+            var localInfo = await localTask;
+            LocalPublicIpText = string.IsNullOrEmpty(localInfo.LocationSummary) || localInfo.LocationSummary == "未知位置"
+                ? localInfo.Ip
+                : $"{localInfo.Ip} ({localInfo.LocationSummary})";
+
+            if (outboundTask != null)
+            {
+                var outboundInfo = await outboundTask;
+                OutboundIpText = outboundInfo.Ip;
+                OutboundLocationText = outboundInfo.LocationSummary;
+            }
+            else
+            {
+                OutboundIpText = "未开启代理 (直连本地)";
+                OutboundLocationText = "内核未启动";
+            }
+
+            AppLogger.LogSystem($"[IP查询] 查询完成: 本地LAN={LocalLanIpText}, 本地公网={LocalPublicIpText}, 出口={OutboundIpText} ({OutboundLocationText})");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[IP查询] 查询 IP 出现异常: {ex.Message}");
+        }
+        finally
+        {
+            IsCheckingIp = false;
         }
     }
 }

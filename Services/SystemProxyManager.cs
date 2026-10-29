@@ -44,7 +44,7 @@ public static class SystemProxyManager
         return "127.0.0.1";
     }
 
-    public static (bool isProxyActive, string proxyServer, bool isOwnProxy) CheckSystemProxyConflict(int ourHttpPort = 10809)
+    public static (bool isProxyActive, string proxyServer, bool isOwnProxy) CheckSystemProxyConflict(int ourHttpPort = 10909)
     {
         try
         {
@@ -91,7 +91,7 @@ public static class SystemProxyManager
         return false;
     }
 
-    public static bool SetSystemProxy(bool enable, string proxyAddress = "127.0.0.1:10809")
+    public static bool SetSystemProxy(bool enable, string proxyAddress = "127.0.0.1:10909")
     {
         try
         {
