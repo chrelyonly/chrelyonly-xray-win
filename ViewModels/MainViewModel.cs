@@ -206,7 +206,6 @@ public class MainViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(ConnectStatusTitle));
                 OnPropertyChanged(nameof(ConnectStatusSubtitle));
-                NotifyXrayStatusChanged();
                 if (SelectedServer != null)
                 {
                     SelectedServer.IsConnected = value;
@@ -232,7 +231,7 @@ public class MainViewModel : ViewModelBase
                     AppLogger.LogSystem($"[系统代理冲突] 检测到当前系统代理已被第三方程序占用: {proxyServer}");
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        new Views.AlertWindow("代理冲突提示", $"检测到当前 Windows 系统代理已被其他程序占用 ({proxyServer})。\n现已自动覆盖并切换为本程序代理 (127.0.0.1:10809)。", true).ShowDialog();
+                        new Views.AlertWindow("代理冲突提示", $"检测到当前 Windows 系统代理已被其他程序占用 ({proxyServer})。", true).ShowDialog();
                     });
                 }
             }
@@ -751,7 +750,8 @@ public class MainViewModel : ViewModelBase
         }
 
         IsConnected = willBeConnected;
-        IsSystemProxyEnabled = willBeConnected;
+        // 开关不操作系统代理配置
+        // IsSystemProxyEnabled = willBeConnected;
         if (SelectedServer != null)
         {
             foreach (var node in Servers)

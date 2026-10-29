@@ -300,7 +300,7 @@
                             <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16">
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,12">
-                                        <TextBlock Text="AI 访问解锁检测" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                        <TextBlock Text="访问解锁检测-(自动读取系统代理)" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
                                         <Button Command="{Binding TestAllAiUnlockCommand}"
                                                 Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
                                                 FontSize="11" Padding="8,3" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">

@@ -14,20 +14,22 @@ public static class AiUnlockTester
             AllowAutoRedirect = true,
             ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
         };
-
-        if (isConnected)
-        {
-            handler.Proxy = new WebProxy("http://127.0.0.1:10809");
-            handler.UseProxy = true;
-        }
-        else
-        {
-            handler.UseProxy = false;
-        }
+        
+        handler.UseProxy = true;
+        handler.Proxy = HttpClient.DefaultProxy;
+        // if (isConnected)
+        // {
+        //     handler.Proxy = new WebProxy("http://127.0.0.1:10809");
+        //     handler.UseProxy = true;
+        // }
+        // else
+        // {
+        //     handler.UseProxy = false;
+        // }
 
         var client = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(4)
+            Timeout = TimeSpan.FromSeconds(5)
         };
         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
         return client;
@@ -53,7 +55,7 @@ public static class AiUnlockTester
             };
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            using var response = await client.SendAsync(request);
             stopwatch.Stop();
             int ms = (int)stopwatch.ElapsedMilliseconds;
 
@@ -78,7 +80,7 @@ public static class AiUnlockTester
                     return (UnlockStatus.Passed, ms);
 
                 case "Claude":
-                    if (code == 200 || code == 302 || code == 301)
+                    if (code == 200 || code == 302 || code == 301 || code == 403)
                     {
                         string claudeBody = await response.Content.ReadAsStringAsync(cts.Token);
                         if (claudeBody.Contains("App unavailable in your region") || claudeBody.Contains("403 Forbidden"))
