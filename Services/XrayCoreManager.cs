@@ -1,10 +1,127 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using chrelyonly_xray_win.Models;
 
 namespace chrelyonly_xray_win.Services;
+
+internal static class ChildProcessTracker
+{
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(
+        IntPtr hJob,
+        JOBOBJECTINFOCLASS JobObjectInfoClass,
+        IntPtr lpJobObjectInfo,
+        uint cbJobObjectInfoLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+    private static readonly IntPtr s_jobHandle;
+
+    static ChildProcessTracker()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+
+        s_jobHandle = CreateJobObject(IntPtr.Zero, null);
+        if (s_jobHandle == IntPtr.Zero)
+            return;
+
+        var basicInfo = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        };
+
+        var extendedInfo = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            BasicLimitInformation = basicInfo
+        };
+
+        int length = Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>();
+        IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
+        try
+        {
+            Marshal.StructureToPtr(extendedInfo, extendedInfoPtr, false);
+            SetInformationJobObject(
+                s_jobHandle,
+                JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation,
+                extendedInfoPtr,
+                (uint)length);
+        }
+        catch
+        {
+            // Ignored
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(extendedInfoPtr);
+        }
+    }
+
+    public static void AddProcess(Process process)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && s_jobHandle != IntPtr.Zero && process != null && !process.HasExited)
+        {
+            try
+            {
+                AssignProcessToJobObject(s_jobHandle, process.Handle);
+            }
+            catch
+            {
+                // Ignored
+            }
+        }
+    }
+
+    private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
+
+    private enum JOBOBJECTINFOCLASS
+    {
+        JobObjectExtendedLimitInformation = 9
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+    {
+        public long PerProcessUserTimeLimit;
+        public long PerJobUserTimeLimit;
+        public uint LimitFlags;
+        public UIntPtr MinimumWorkingSetSize;
+        public UIntPtr MaximumWorkingSetSize;
+        public uint ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public uint PriorityClass;
+        public uint SchedulingClass;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IO_COUNTERS
+    {
+        public ulong ReadOperationCount;
+        public ulong WriteOperationCount;
+        public ulong OtherOperationCount;
+        public ulong ReadTransferCount;
+        public ulong WriteTransferCount;
+        public ulong OtherTransferCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+    {
+        public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+        public IO_COUNTERS IoInfo;
+        public UIntPtr ProcessMemoryLimit;
+        public UIntPtr JobMemoryLimit;
+        public UIntPtr PeakProcessMemoryLimit;
+        public UIntPtr PeakJobMemoryLimit;
+    }
+}
 
 public class XrayCoreManager
 {
@@ -16,6 +133,49 @@ public class XrayCoreManager
     public string LogFilePath => Path.Combine(CoreFolderPath, "xray.log");
 
     public bool IsRunning => _xrayProcess != null && !_xrayProcess.HasExited;
+
+    public XrayCoreManager()
+    {
+        KillAllXrayProcesses();
+    }
+
+    public static void KillAllXrayProcesses()
+    {
+        try
+        {
+            string[] targetNames = new[] { "xraylib" };
+            int currentPid = Environment.ProcessId;
+
+            foreach (var name in targetNames)
+            {
+                var processes = Process.GetProcessesByName(name);
+                foreach (var proc in processes)
+                {
+                    try
+                    {
+                        if (proc.Id != currentPid && !proc.HasExited)
+                        {
+                            AppLogger.LogSystem($"[XRAY核心] 正在清理残留的 {name} 进程 (PID: {proc.Id})...");
+                            proc.Kill(true);
+                            proc.WaitForExit(1000);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.LogSystem($"[XRAY核心] 清理进程 PID {proc.Id} 失败: {ex.Message}");
+                    }
+                    finally
+                    {
+                        proc.Dispose();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[XRAY核心] 扫描并清理残留 Xray 进程异常: {ex.Message}");
+        }
+    }
 
 
     public string GenerateClientConfig(
@@ -246,8 +406,8 @@ private JsonArray BuildOutbounds(ServerNode node)
 
     string address = node.Address;
     int port = node.Port;
-    string email = node.Email;
-    string encryption = node.Encryption;
+    string email = string.IsNullOrWhiteSpace(node.Email) ? "t@t.tt" : node.Email;
+    string encryption = string.IsNullOrWhiteSpace(node.Encryption) ? "none" : node.Encryption;
     string transport = node.Transport;
     string security = node.Security;
 
@@ -279,24 +439,37 @@ private JsonArray BuildOutbounds(ServerNode node)
     {
         proxyOutbound["settings"] = new JsonObject
         {
-            ["address"] = address,
-            ["port"] = port,
-            ["email"] = email,
-            ["id"] = node.Uuid,
-            ["encryption"] = encryption,
+            ["vnext"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["address"] = address,
+                    ["port"] = port,
+                    ["users"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["id"] = node.Uuid,
+                            ["encryption"] = encryption,
+                            ["flow"] = node.Flow ?? "",
+                            ["email"] = email
+                        }
+                    }
+                }
+            }
         };
     }
 
     // 如果是tls加密
     if (security.Equals("tls", StringComparison.OrdinalIgnoreCase))
     {
-        
+        string serverName = !string.IsNullOrWhiteSpace(node.Host) ? node.Host : (!string.IsNullOrWhiteSpace(node.Sni) ? node.Sni : node.Address);
         // 如果是vless
         if (node.Protocol.Equals("vless", StringComparison.OrdinalIgnoreCase))
         {
             proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
             {
-                ["serverName"] = node.Host,
+                ["serverName"] = serverName,
                 ["alpn"] = new JsonArray()
                 {
                     "h2",
@@ -304,7 +477,7 @@ private JsonArray BuildOutbounds(ServerNode node)
                     "h3"
                 },
                 ["fingerprint"] =  "chrome",
-                ["echConfigList"] = node.Ech,
+                ["echConfigList"] = node.Ech ?? "",
                 ["echForceQuery"] = "full"
             };
         }
@@ -313,7 +486,7 @@ private JsonArray BuildOutbounds(ServerNode node)
         {
             proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
             {
-                ["serverName"] = node.Host,
+                ["serverName"] = serverName,
                 ["fingerprint"] =  "chrome",
             };
         }
@@ -589,6 +762,7 @@ private JsonObject BuildRouting(bool isGlobalMode)
             AppLogger.LogSystem("[XRAY核心] config.json 写入成功。");
 
             StopCore();
+            Thread.Sleep(100);
 
             var startInfo = new ProcessStartInfo
             {
@@ -604,7 +778,8 @@ private JsonObject BuildRouting(bool isGlobalMode)
             _xrayProcess = Process.Start(startInfo);
             if (_xrayProcess != null)
             {
-                AppLogger.LogSystem($"[XRAY核心] Xray 进程已成功启动，PID: {_xrayProcess.Id}");
+                ChildProcessTracker.AddProcess(_xrayProcess);
+                AppLogger.LogSystem($"[XRAY核心] Xray 进程已成功启动并绑定 JobObject，PID: {_xrayProcess.Id}");
 
                 _xrayProcess.OutputDataReceived += (s, e) =>
                 {
@@ -644,21 +819,19 @@ private JsonObject BuildRouting(bool isGlobalMode)
     {
         try
         {
+            AppLogger.LogSystem("[XRAY核心] 正在停止 Xray 内核进程及子进程树...");
             if (_xrayProcess != null)
             {
-                AppLogger.LogSystem("[XRAY核心] 正在停止 Xray 内核进程及子进程树...");
                 if (!_xrayProcess.HasExited)
                 {
                     _xrayProcess.Kill(true);
+                    _xrayProcess.WaitForExit(1000);
                 }
                 _xrayProcess.Dispose();
                 _xrayProcess = null;
-                AppLogger.LogSystem("[XRAY核心] Xray 内核进程已安全停止。");
             }
-            else
-            {
-                AppLogger.LogSystem("[XRAY核心] 停止忽略：当前没有运行中的 Xray 进程。");
-            }
+            KillAllXrayProcesses();
+            AppLogger.LogSystem("[XRAY核心] Xray 内核进程已安全停止。");
         }
         catch (Exception ex)
         {

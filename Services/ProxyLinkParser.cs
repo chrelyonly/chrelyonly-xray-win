@@ -53,7 +53,7 @@ public static class ProxyLinkParser
             ShortId = query["sid"] ?? "",
             Spx = query["spx"] ?? "",
             Flow = query["flow"] ?? "",
-            Encryption = query["encryption"] ?? "",
+            Encryption = string.IsNullOrWhiteSpace(query["encryption"]) ? "none" : query["encryption"],
             Ech = query["ech"] ?? "",
             Host = query["host"] ?? "",
             Path = query["path"] ?? "",

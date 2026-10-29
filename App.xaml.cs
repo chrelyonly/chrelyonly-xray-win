@@ -3,6 +3,8 @@ using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
+using chrelyonly_xray_win.Services;
 
 using Application = System.Windows.Application;
 
@@ -35,6 +37,15 @@ public partial class App : Application
             Shutdown();
             return;
         }
+
+        // 注册全局异常处理及进程退出逻辑，确保非正常退出时释放系统代理和终止内核
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+
+        // 启动时主动扫描并强制清理上次残留/孤儿 xraylib 进程
+        XrayCoreManager.KillAllXrayProcesses();
 
         _eventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset, AppUniqueName + "_event");
         Task.Run(() =>
@@ -70,8 +81,59 @@ public partial class App : Application
         base.OnStartup(e);
     }
 
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            AppLogger.LogSystem($"[全局异常] AppDomain 发生未处理异常: {e.ExceptionObject}");
+            CleanupOnExit();
+        }
+        catch { }
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            AppLogger.LogSystem($"[全局异常] Dispatcher 发生未处理异常: {e.Exception.Message}");
+            CleanupOnExit();
+        }
+        catch { }
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        try
+        {
+            AppLogger.LogSystem($"[全局异常] Task 发生未观察异常: {e.Exception.Message}");
+            e.SetObserved();
+        }
+        catch { }
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e)
+    {
+        try
+        {
+            CleanupOnExit();
+        }
+        catch { }
+    }
+
+    private static void CleanupOnExit()
+    {
+        try
+        {
+            SystemProxyManager.SetSystemProxy(false);
+            XrayCoreManager.KillAllXrayProcesses();
+        }
+        catch { }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        CleanupOnExit();
+
         if (_mutex != null)
         {
             try

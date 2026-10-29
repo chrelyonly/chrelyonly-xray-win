@@ -13,6 +13,7 @@ public class AddServerViewModel : ViewModelBase
     private string _transport = "TCP";
     private string _uuid = "";
     private string _shareLink = "";
+    private ServerNode? _importedNode;
 
     public string[] Protocols { get; } = ["VLESS", "VMess", "Trojan", "Shadowsocks"];
     public string[] Securities { get; } = ["Reality", "TLS", "None"];
@@ -81,6 +82,7 @@ public class AddServerViewModel : ViewModelBase
 
     public AddServerViewModel(ServerNode existingNode) : this()
     {
+        _importedNode = existingNode;
         Name = existingNode.Name;
         Address = existingNode.Address;
         Port = existingNode.Port;
@@ -96,6 +98,7 @@ public class AddServerViewModel : ViewModelBase
         var parsed = ProxyLinkParser.ParseShareLink(link);
         if (parsed != null)
         {
+            _importedNode = parsed;
             Name = parsed.Name;
             Address = parsed.Address;
             Port = parsed.Port;
@@ -108,6 +111,18 @@ public class AddServerViewModel : ViewModelBase
 
     public ServerNode ToServerNode()
     {
+        if (_importedNode != null)
+        {
+            _importedNode.Name = string.IsNullOrWhiteSpace(Name) ? "未命名节点" : Name;
+            _importedNode.Address = Address;
+            _importedNode.Port = Port;
+            _importedNode.Protocol = Protocol;
+            _importedNode.Security = Security;
+            _importedNode.Transport = Transport;
+            _importedNode.Uuid = Uuid;
+            return _importedNode;
+        }
+
         return new ServerNode
         {
             Name = string.IsNullOrWhiteSpace(Name) ? "未命名节点" : Name,
@@ -116,7 +131,8 @@ public class AddServerViewModel : ViewModelBase
             Protocol = Protocol,
             Security = Security,
             Transport = Transport,
-            Uuid = Uuid
+            Uuid = Uuid,
+            Encryption = "none"
         };
     }
 }

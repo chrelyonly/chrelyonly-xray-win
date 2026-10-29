@@ -60,7 +60,15 @@ public static class SqliteStorageService
                     LatencyMs INTEGER,
                     IsOpenAiUnlocked INTEGER,
                     IsClaudeUnlocked INTEGER,
-                    IsGeminiUnlocked INTEGER
+                    IsGeminiUnlocked INTEGER,
+                    Email TEXT,
+                    Host TEXT,
+                    Ech TEXT,
+                    Path TEXT,
+                    Encryption TEXT,
+                    Obfs TEXT,
+                    ObfsPassword TEXT,
+                    Spx TEXT
                 );
 
                 CREATE TABLE IF NOT EXISTS Settings (
@@ -70,17 +78,32 @@ public static class SqliteStorageService
             ";
             command.ExecuteNonQuery();
 
-            // 检查并自动适配旧版数据库：若 Servers 表缺少 SubscriptionId 字段则动态添加
-            try
+            // 动态补充可能缺失的字段列
+            var columnsToAdd = new[]
             {
-                using var alterCmd = connection.CreateCommand();
-                alterCmd.CommandText = "ALTER TABLE Servers ADD COLUMN SubscriptionId TEXT;";
-                alterCmd.ExecuteNonQuery();
-                AppLogger.LogSystem("[SQLite存储] 成功为 Servers 表补全 SubscriptionId 列。");
-            }
-            catch
+                "SubscriptionId TEXT",
+                "Email TEXT",
+                "Host TEXT",
+                "Ech TEXT",
+                "Path TEXT",
+                "Encryption TEXT",
+                "Obfs TEXT",
+                "ObfsPassword TEXT",
+                "Spx TEXT"
+            };
+
+            foreach (var col in columnsToAdd)
             {
-                // 列已存在或无需添加，忽略异常
+                try
+                {
+                    using var alterCmd = connection.CreateCommand();
+                    alterCmd.CommandText = $"ALTER TABLE Servers ADD COLUMN {col};";
+                    alterCmd.ExecuteNonQuery();
+                }
+                catch
+                {
+                    // 列已存在，忽略
+                }
             }
 
             AppLogger.LogSystem("[SQLite存储] SQLite 数据库表结构初始化成功。");
@@ -132,7 +155,7 @@ public static class SqliteStorageService
             // 2. Load Servers
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked FROM Servers";
+                cmd.CommandText = "SELECT Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked, Email, Host, Ech, Path, Encryption, Obfs, ObfsPassword, Spx FROM Servers";
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -154,7 +177,15 @@ public static class SqliteStorageService
                         LatencyMs = reader.GetInt32(13),
                         IsOpenAiUnlocked = reader.GetInt32(14) == 1,
                         IsClaudeUnlocked = reader.GetInt32(15) == 1,
-                        IsGeminiUnlocked = reader.GetInt32(16) == 1
+                        IsGeminiUnlocked = reader.GetInt32(16) == 1,
+                        Email = reader.IsDBNull(17) ? "" : reader.GetString(17),
+                        Host = reader.IsDBNull(18) ? "" : reader.GetString(18),
+                        Ech = reader.IsDBNull(19) ? "" : reader.GetString(19),
+                        Path = reader.IsDBNull(20) ? "" : reader.GetString(20),
+                        Encryption = reader.IsDBNull(21) ? "none" : (string.IsNullOrWhiteSpace(reader.GetString(21)) ? "none" : reader.GetString(21)),
+                        Obfs = reader.IsDBNull(22) ? "" : reader.GetString(22),
+                        ObfsPassword = reader.IsDBNull(23) ? "" : reader.GetString(23),
+                        Spx = reader.IsDBNull(24) ? "" : reader.GetString(24)
                     };
                     model.CachedServers.Add(node);
 
@@ -243,8 +274,14 @@ public static class SqliteStorageService
                         using var sCmd = connection.CreateCommand();
                         sCmd.Transaction = transaction;
                         sCmd.CommandText = @"
-                            INSERT INTO Servers (Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked)
-                            VALUES (@Id, @SubscriptionId, @Name, @Address, @Port, @Protocol, @Security, @Transport, @Uuid, @Sni, @PublicKey, @ShortId, @Flow, @LatencyMs, @IsOpenAiUnlocked, @IsClaudeUnlocked, @IsGeminiUnlocked);
+                            INSERT INTO Servers (
+                                Id, SubscriptionId, Name, Address, Port, Protocol, Security, Transport, Uuid, Sni, PublicKey, ShortId, Flow, LatencyMs, IsOpenAiUnlocked, IsClaudeUnlocked, IsGeminiUnlocked,
+                                Email, Host, Ech, Path, Encryption, Obfs, ObfsPassword, Spx
+                            )
+                            VALUES (
+                                @Id, @SubscriptionId, @Name, @Address, @Port, @Protocol, @Security, @Transport, @Uuid, @Sni, @PublicKey, @ShortId, @Flow, @LatencyMs, @IsOpenAiUnlocked, @IsClaudeUnlocked, @IsGeminiUnlocked,
+                                @Email, @Host, @Ech, @Path, @Encryption, @Obfs, @ObfsPassword, @Spx
+                            );
                         ";
                         sCmd.Parameters.AddWithValue("@Id", node.Id ?? Guid.NewGuid().ToString());
                         sCmd.Parameters.AddWithValue("@SubscriptionId", sub.Id);
@@ -263,6 +300,14 @@ public static class SqliteStorageService
                         sCmd.Parameters.AddWithValue("@IsOpenAiUnlocked", node.IsOpenAiUnlocked ? 1 : 0);
                         sCmd.Parameters.AddWithValue("@IsClaudeUnlocked", node.IsClaudeUnlocked ? 1 : 0);
                         sCmd.Parameters.AddWithValue("@IsGeminiUnlocked", node.IsGeminiUnlocked ? 1 : 0);
+                        sCmd.Parameters.AddWithValue("@Email", node.Email ?? "");
+                        sCmd.Parameters.AddWithValue("@Host", node.Host ?? "");
+                        sCmd.Parameters.AddWithValue("@Ech", node.Ech ?? "");
+                        sCmd.Parameters.AddWithValue("@Path", node.Path ?? "");
+                        sCmd.Parameters.AddWithValue("@Encryption", string.IsNullOrWhiteSpace(node.Encryption) ? "none" : node.Encryption);
+                        sCmd.Parameters.AddWithValue("@Obfs", node.Obfs ?? "");
+                        sCmd.Parameters.AddWithValue("@ObfsPassword", node.ObfsPassword ?? "");
+                        sCmd.Parameters.AddWithValue("@Spx", node.Spx ?? "");
                         await sCmd.ExecuteNonQueryAsync();
                     }
                 }
