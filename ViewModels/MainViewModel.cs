@@ -280,6 +280,7 @@ public class MainViewModel : ViewModelBase
             if (SetProperty(ref _selectedTabIndex, value))
             {
                 OnPropertyChanged(nameof(IsHomeTabSelected));
+                OnPropertyChanged(nameof(IsSpeedStatsTabSelected));
                 OnPropertyChanged(nameof(IsNodesTabSelected));
                 OnPropertyChanged(nameof(IsSubscriptionsTabSelected));
                 OnPropertyChanged(nameof(IsLogsTabSelected));
@@ -288,9 +289,10 @@ public class MainViewModel : ViewModelBase
     }
 
     public bool IsHomeTabSelected => SelectedTabIndex == 0;
-    public bool IsNodesTabSelected => SelectedTabIndex == 1;
-    public bool IsSubscriptionsTabSelected => SelectedTabIndex == 2;
-    public bool IsLogsTabSelected => SelectedTabIndex == 3;
+    public bool IsSpeedStatsTabSelected => SelectedTabIndex == 1;
+    public bool IsNodesTabSelected => SelectedTabIndex == 2;
+    public bool IsSubscriptionsTabSelected => SelectedTabIndex == 3;
+    public bool IsLogsTabSelected => SelectedTabIndex == 4;
 
     public ServerNode? SelectedServer
     {
@@ -836,7 +838,7 @@ public class MainViewModel : ViewModelBase
             {
                 AppLogger.LogSystem("[主控逻辑] 提示：当前未选中任何节点。");
                 new Views.AlertWindow("提示", "请先在节点列表中选择一个服务器节点。", false).ShowDialog();
-                SelectedTabIndex = 1; // Switch to nodes tab
+                SelectedTabIndex = 2; // Switch to nodes tab
                 return;
             }
 

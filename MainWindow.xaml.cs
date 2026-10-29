@@ -151,18 +151,20 @@ public partial class MainWindow : Window
         FrameworkElement? targetElement = newTabIndex switch
         {
             0 => HomeTabGrid,
-            1 => NodesTabGrid,
-            2 => SubscriptionsTabGrid,
-            3 => LogsTabGrid,
+            1 => SpeedStatsTabGrid,
+            2 => NodesTabGrid,
+            3 => SubscriptionsTabGrid,
+            4 => LogsTabGrid,
             _ => null
         };
 
         TranslateTransform? targetTransform = newTabIndex switch
         {
             0 => HomeTabTransform,
-            1 => NodesTabTransform,
-            2 => SubscriptionsTabTransform,
-            3 => LogsTabTransform,
+            1 => SpeedStatsTabTransform,
+            2 => NodesTabTransform,
+            3 => SubscriptionsTabTransform,
+            4 => LogsTabTransform,
             _ => null
         };
 
