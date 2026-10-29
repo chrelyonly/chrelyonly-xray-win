@@ -223,7 +223,7 @@ public class MainViewModel : ViewModelBase
 
     public string RoutingModeStatusText => IsGlobalMode ? "全局代理模式 (所有流量走代理)" : "智能分流模式 (大陆直连/海外代理)";
 
-    public string AppVersionText => "v20261027修仙版";
+    public string AppVersionText => "v20261029修仙版";
 
     public string MemoryUsageText
     {
