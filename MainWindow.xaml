@@ -619,23 +619,33 @@
 
                         <DockPanel Grid.Row="0" Margin="0,0,0,12">
                             <TextBlock Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
-                            <Button Command="{Binding TestAllNodesLatencyCommand}"
-                                    Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
-                                    FontSize="12" FontWeight="Bold" Padding="12,6" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                        <Setter Property="Content" Value="⚡ 一键测速"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsTestingAllNodes}" Value="True">
-                                                <Setter Property="Content" Value="⏳ 测速中..."/>
-                                                <Setter Property="IsEnabled" Value="False"/>
-                                                <Setter Property="Background" Value="#E5E7EB"/>
-                                                <Setter Property="Foreground" Value="#6B7280"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <Button Command="{Binding SortNodesByLatencyCommand}"
+                                        Content="🔄 延迟排序"
+                                        Background="#F3F4F6" Foreground="#374151" BorderBrush="#D1D5DB"
+                                        FontSize="12" FontWeight="Medium" Padding="10,6" Margin="0,0,8,0"
+                                        Style="{StaticResource ModernButtonStyle}"
+                                        ToolTip="按节点延迟从小到大进行排序"/>
+
+                                <Button Command="{Binding TestAllNodesLatencyCommand}"
+                                        Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                        FontSize="12" FontWeight="Bold" Padding="12,6" VerticalAlignment="Center">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                            <Setter Property="Content" Value="⚡ 一键测速"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsTestingAllNodes}" Value="True">
+                                                    <Setter Property="Content" Value="⏳ 测速中..."/>
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Background" Value="#E5E7EB"/>
+                                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
                         </DockPanel>
 
                         <!-- Nodes ListBox -->

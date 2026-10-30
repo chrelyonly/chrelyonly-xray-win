@@ -497,6 +497,7 @@ public class MainViewModel : ViewModelBase
     public RelayCommand TestAllAiUnlockCommand { get; }
     public RelayCommand TestNodeLatencyCommand { get; }
     public RelayCommand TestAllNodesLatencyCommand { get; }
+    public RelayCommand SortNodesByLatencyCommand { get; }
 
     // Subscription Dialog Commands
     public RelayCommand AddSubDialogCommand { get; }
@@ -679,6 +680,7 @@ public class MainViewModel : ViewModelBase
         });
 
         TestAllNodesLatencyCommand = new RelayCommand(async () => await TestAllNodesLatencyAsync());
+        SortNodesByLatencyCommand = new RelayCommand(SortNodesByLatency);
 
         ToggleLoggingCommand = new RelayCommand(() =>
         {
@@ -1333,5 +1335,19 @@ public class MainViewModel : ViewModelBase
         {
             IsCheckingIp = false;
         }
+    }
+
+    public void SortNodesByLatency()
+    {
+        var sortedList = Servers
+            .OrderBy(s => s.LatencyMs <= 0 ? int.MaxValue : s.LatencyMs)
+            .ToList();
+
+        Servers.Clear();
+        foreach (var node in sortedList)
+        {
+            Servers.Add(node);
+        }
+        AppLogger.LogSystem("[节点列表] 已按照延迟从低到高对服务器节点进行排序。");
     }
 }
