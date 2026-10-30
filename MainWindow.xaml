@@ -10,7 +10,12 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="Microsoft YaHei UI, Segoe UI, sans-serif">
 
     <Window.DataContext>
         <vm:MainViewModel />

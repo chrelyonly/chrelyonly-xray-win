@@ -23,6 +23,20 @@
     <CornerRadius x:Key="ButtonCornerRadius">8</CornerRadius>
     <CornerRadius x:Key="BadgeCornerRadius">6</CornerRadius>
 
+    <!-- Global Text Formatting & Typography Styles -->
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI, sans-serif"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+    </Style>
+
+    <Style TargetType="TextBox">
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI, sans-serif"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
     <!-- Modern Sleek ScrollBar Style -->
     <Style TargetType="ScrollBar">
         <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>

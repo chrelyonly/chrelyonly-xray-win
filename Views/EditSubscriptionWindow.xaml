@@ -7,7 +7,12 @@
         Background="Transparent"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="Microsoft YaHei UI, Segoe UI, sans-serif">
 
     <Border Background="#FFFFFF"
             BorderBrush="#E5E7EB"

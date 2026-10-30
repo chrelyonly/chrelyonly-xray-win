@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ebe94d6c-b860-434c-9e0f-7103b9ec9a9a" name="Changes" comment="" />
+    <list default="true" id="ebe94d6c-b860-434c-9e0f-7103b9ec9a9a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Resources/ThemeStyles.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Resources/ThemeStyles.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/AlertWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/AlertWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/ConfirmWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/ConfirmWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/EditSubscriptionWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/EditSubscriptionWindow.xaml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
