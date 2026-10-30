@@ -917,8 +917,6 @@ public class MainViewModel : ViewModelBase
             {
                 AppLogger.LogSystem($"[主控逻辑] 正在使用节点启动代理: {SelectedServer.Name} (允许局域网: {AllowLan}, 全局模式: {IsGlobalMode})");
                 var srv = SelectedServer;
-                var lan = AllowLan;
-                var global = IsGlobalMode;
 
                 IsConnected = true;
                 IsSystemProxyEnabled = true;
@@ -960,7 +958,19 @@ public class MainViewModel : ViewModelBase
         }
         else
         {
-            AppLogger.LogSystem("[主控逻辑] 正在关闭代理，停止 Xray 核心...");
+            AppLogger.LogSystem("[主控逻辑] 正在关闭代理，停止 Xray 核心与系统代理...");
+            IsConnected = false;
+            IsSystemProxyEnabled = false;
+            if (SelectedServer != null)
+            {
+                foreach (var node in Servers)
+                {
+                    node.IsConnected = false;
+                }
+            }
+            NotifyXrayStatusChanged();
+            SaveState();
+
             _ = Task.Run(() =>
             {
                 _xrayManager.StopCore();
@@ -970,25 +980,6 @@ public class MainViewModel : ViewModelBase
                     _ = RefreshIpInfoAsync();
                 });
             });
-        }
-
-        IsConnected = willBeConnected;
-        if (SelectedServer != null)
-        {
-            foreach (var node in Servers)
-            {
-                node.IsConnected = false;
-            }
-            SelectedServer.IsConnected = IsConnected;
-        }
-        NotifyXrayStatusChanged();
-        SaveState();
-
-        if (IsConnected)
-        {
-            _ = RefreshCurrentLatencyAsync();
-            _ = TestAllAiUnlockAsync();
-            _ = RefreshIpInfoAsync();
         }
     }
 
