@@ -162,6 +162,33 @@ public class MainViewModel : ViewModelBase
 
     public string LanIpAddress => SystemProxyManager.GetLocalLanIp();
 
+    public string GenerateCurrentConfig(ServerNode? node = null)
+    {
+        var srv = node ?? SelectedServer;
+        if (srv == null) return "";
+        return _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
+    }
+
+    private void ReapplyXrayConfigIfConnected(ServerNode? targetNode = null)
+    {
+        if (IsConnected)
+        {
+            var srv = targetNode ?? SelectedServer;
+            if (srv != null)
+            {
+                _ = Task.Run(() =>
+                {
+                    string configJson = GenerateCurrentConfig(srv);
+                    _xrayManager.StartCore(configJson);
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        NotifyXrayStatusChanged();
+                    });
+                });
+            }
+        }
+    }
+
     public bool AllowLan
     {
         get => _allowLan;
@@ -172,23 +199,10 @@ public class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(AllowLanStatusText));
                 SaveState();
 
-                if (IsConnected && SelectedServer != null)
+                if (IsConnected)
                 {
-                    AppLogger.LogSystem($"[局域网共享] 局域网共享已切换为: {value}，正在异步重新应用 Xray 监听地址配置...");
-                    var srv = SelectedServer;
-                    var lan = value;
-                    var global = IsGlobalMode;
-                    var proxyRules = CustomProxyRules;
-                    var directRules = CustomDirectRules;
-                    _ = Task.Run(() =>
-                    {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
-                        _xrayManager.StartCore(configJson);
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            NotifyXrayStatusChanged();
-                        });
-                    });
+                    AppLogger.LogSystem($"[局域网共享] 局域网共享已切换为: {value}，正在重新应用 Xray 监听配置...");
+                    ReapplyXrayConfigIfConnected();
                 }
             }
         }
@@ -206,23 +220,10 @@ public class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(RoutingModeStatusText));
                 SaveState();
 
-                if (IsConnected && SelectedServer != null)
+                if (IsConnected)
                 {
-                    AppLogger.LogSystem($"[路由模式] 路由模式已变更为: {(value ? "全局代理" : "智能分流")}，正在异步热重启 Xray 内核应用路由配置...");
-                    var srv = SelectedServer;
-                    var lan = AllowLan;
-                    var global = value;
-                    var proxyRules = CustomProxyRules;
-                    var directRules = CustomDirectRules;
-                    _ = Task.Run(() =>
-                    {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
-                        _xrayManager.StartCore(configJson);
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            NotifyXrayStatusChanged();
-                        });
-                    });
+                    AppLogger.LogSystem($"[路由模式] 路由模式已变更为: {(value ? "全局代理" : "智能分流")}，正在重启 Xray 应用配置...");
+                    ReapplyXrayConfigIfConnected();
                 }
             }
         }
@@ -264,28 +265,6 @@ public class MainViewModel : ViewModelBase
                 SaveState();
                 SystemProxyManager.SetAutoStart(value);
             }
-        }
-    }
-
-    private void ReapplyXrayConfigIfConnected()
-    {
-        if (IsConnected && SelectedServer != null)
-        {
-            AppLogger.LogSystem("[分流规则] 发现自定义域名/IP分流规则已更新，正在热重载 Xray 内核...");
-            var srv = SelectedServer;
-            var lan = AllowLan;
-            var global = IsGlobalMode;
-            var proxyRules = CustomProxyRules;
-            var directRules = CustomDirectRules;
-            _ = Task.Run(() =>
-            {
-                string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
-                _xrayManager.StartCore(configJson);
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    NotifyXrayStatusChanged();
-                });
-            });
         }
     }
 
@@ -731,24 +710,11 @@ public class MainViewModel : ViewModelBase
                 }
                 node.IsConnected = IsConnected;
 
-                // If currently connected, restart core with new node config, AllowLan and IsGlobalMode
+                // If currently connected, restart core with new node config
                 if (IsConnected)
                 {
-                    AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在异步热重启 Xray 内核应用新节点配置...");
-                    var srv = node;
-                    var lan = AllowLan;
-                    var global = IsGlobalMode;
-                    _ = Task.Run(() =>
-                    {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, CustomProxyRules, CustomDirectRules);
-                        _xrayManager.StartCore(configJson);
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            NotifyXrayStatusChanged();
-                        });
-                    });
-
-                    // 切换节点时主动发起测速与AI解锁检测
+                    AppLogger.LogSystem("[主控逻辑] 当前处于连接状态，正在热重启 Xray 内核应用新节点配置...");
+                    ReapplyXrayConfigIfConnected(node);
                     _ = RefreshCurrentLatencyAsync();
                     _ = TestAllAiUnlockAsync();
                 }
@@ -964,7 +930,7 @@ public class MainViewModel : ViewModelBase
 
                 _ = Task.Run(() =>
                 {
-                    string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, CustomProxyRules, CustomDirectRules);
+                    string configJson = GenerateCurrentConfig(srv);
                     bool success = _xrayManager.StartCore(configJson);
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -1145,7 +1111,7 @@ public class MainViewModel : ViewModelBase
                 if (srv != null)
                 {
                     AppLogger.LogSystem("[订阅逻辑] 代理更新已开启，但 Xray 内核未运行，正在自动启动内核以提供代理支持...");
-                    string configJson = _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
+                    string configJson = GenerateCurrentConfig(srv);
                     _xrayManager.StartCore(configJson);
                     await Task.Delay(1000); // 等待内核就绪
                 }
@@ -1231,7 +1197,7 @@ public class MainViewModel : ViewModelBase
             if (!_xrayManager.IsRunning)
             {
                 AppLogger.LogSystem("[节点测速] Xray 内核未运行，正在临时启动内核进行节点测速...");
-                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
+                string configJson = GenerateCurrentConfig(SelectedServer);
                 bool ok = _xrayManager.StartCore(configJson);
                 if (!ok)
                 {

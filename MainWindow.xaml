@@ -131,7 +131,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- LAN & Proxy Address Info Card -->
+                            <!-- Network & Routing Status Card -->
                             <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -154,34 +154,22 @@
                                     <!-- Divider -->
                                     <Border Grid.Row="1" Height="1" Background="#F3F4F6" Margin="0,8,0,8"/>
 
-                                    <!-- Allow LAN Access Switch -->
+                                    <!-- Current Routing Mode Overview & Settings Quick Switch Link -->
                                     <DockPanel Grid.Row="2">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="允许局域网连接 (Allow LAN)" FontSize="13" FontWeight="SemiBold" Foreground="#111827"/>
-                                            <TextBlock Text="{Binding AllowLanStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                            <TextBlock Text="当前路由分流" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
 
-                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
-                                                      IsChecked="{Binding AllowLan}"
-                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                      ToolTip="允许同局域网的其他设备通过本机的 IP 使用代理"/>
+                                        <Button Command="{Binding SelectTabCommand}" CommandParameter="5"
+                                                Content="⚙️ 详细设置"
+                                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                FontSize="11" FontWeight="Bold" Padding="10,5"
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Style="{StaticResource ModernButtonStyle}"
+                                                ToolTip="前往设置页面管理局域网共享与黑白名单分流规则"/>
                                     </DockPanel>
                                 </Grid>
-                            </Border>
-
-                            <!-- Routing Mode Card (智能分流 / 全局代理 Switch) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
-                                <DockPanel>
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                        <TextBlock Text="路由模式" FontSize="13" FontWeight="SemiBold" Foreground="#111827"/>
-                                        <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
-                                    </StackPanel>
-
-                                    <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
-                                                  IsChecked="{Binding IsGlobalMode}"
-                                                  DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                  ToolTip="切换智能分流（开启大陆直连）与全局代理"/>
-                                </DockPanel>
                             </Border>
 
                             <!-- Header Status Card -->

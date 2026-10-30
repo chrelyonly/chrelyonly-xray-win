@@ -5,9 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ebe94d6c-b860-434c-9e0f-7103b9ec9a9a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Services/SystemProxyManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/SystemProxyManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Services/XrayCoreManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/XrayCoreManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Services/AdvancedStorageService.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Services/StorageService.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ViewModels/AddServerViewModel.cs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/ViewModels/MainViewModel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ViewModels/MainViewModel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ViewModels/SubscriptionViewModel.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/AddServerWindow.xaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/AddServerWindow.xaml.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/SettingsWindow.xaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/SettingsWindow.xaml.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/SubscriptionWindow.xaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/SubscriptionWindow.xaml.cs" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
