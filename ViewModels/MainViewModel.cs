@@ -22,6 +22,9 @@ public class MainViewModel : ViewModelBase
     private bool _allowLan = false;
     private bool _isSystemProxyEnabled = false;
     private bool _isGlobalMode = false;
+    private string _customProxyRules = "";
+    private string _customDirectRules = "";
+    private bool _isAutoStartEnabled = false;
     private string _memoryUsageText = "0.0 MB";
     private string _uploadSpeedText = "0.0 KB/s";
     private string _downloadSpeedText = "0.0 KB/s";
@@ -175,9 +178,11 @@ public class MainViewModel : ViewModelBase
                     var srv = SelectedServer;
                     var lan = value;
                     var global = IsGlobalMode;
+                    var proxyRules = CustomProxyRules;
+                    var directRules = CustomDirectRules;
                     _ = Task.Run(() =>
                     {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
                         _xrayManager.StartCore(configJson);
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -207,9 +212,11 @@ public class MainViewModel : ViewModelBase
                     var srv = SelectedServer;
                     var lan = AllowLan;
                     var global = value;
+                    var proxyRules = CustomProxyRules;
+                    var directRules = CustomDirectRules;
                     _ = Task.Run(() =>
                     {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
                         _xrayManager.StartCore(configJson);
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -218,6 +225,67 @@ public class MainViewModel : ViewModelBase
                     });
                 }
             }
+        }
+    }
+
+    public string CustomProxyRules
+    {
+        get => _customProxyRules;
+        set
+        {
+            if (SetProperty(ref _customProxyRules, value))
+            {
+                SaveState();
+                ReapplyXrayConfigIfConnected();
+            }
+        }
+    }
+
+    public string CustomDirectRules
+    {
+        get => _customDirectRules;
+        set
+        {
+            if (SetProperty(ref _customDirectRules, value))
+            {
+                SaveState();
+                ReapplyXrayConfigIfConnected();
+            }
+        }
+    }
+
+    public bool IsAutoStartEnabled
+    {
+        get => _isAutoStartEnabled;
+        set
+        {
+            if (SetProperty(ref _isAutoStartEnabled, value))
+            {
+                SaveState();
+                SystemProxyManager.SetAutoStart(value);
+            }
+        }
+    }
+
+    private void ReapplyXrayConfigIfConnected()
+    {
+        if (IsConnected && SelectedServer != null)
+        {
+            AppLogger.LogSystem("[分流规则] 发现自定义域名/IP分流规则已更新，正在热重载 Xray 内核...");
+            var srv = SelectedServer;
+            var lan = AllowLan;
+            var global = IsGlobalMode;
+            var proxyRules = CustomProxyRules;
+            var directRules = CustomDirectRules;
+            _ = Task.Run(() =>
+            {
+                string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, proxyRules, directRules);
+                _xrayManager.StartCore(configJson);
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    NotifyXrayStatusChanged();
+                });
+            });
         }
     }
 
@@ -284,6 +352,7 @@ public class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsNodesTabSelected));
                 OnPropertyChanged(nameof(IsSubscriptionsTabSelected));
                 OnPropertyChanged(nameof(IsLogsTabSelected));
+                OnPropertyChanged(nameof(IsSettingsTabSelected));
             }
         }
     }
@@ -293,6 +362,7 @@ public class MainViewModel : ViewModelBase
     public bool IsNodesTabSelected => SelectedTabIndex == 2;
     public bool IsSubscriptionsTabSelected => SelectedTabIndex == 3;
     public bool IsLogsTabSelected => SelectedTabIndex == 4;
+    public bool IsSettingsTabSelected => SelectedTabIndex == 5;
 
     public ServerNode? SelectedServer
     {
@@ -461,6 +531,10 @@ public class MainViewModel : ViewModelBase
     public RelayCommand CancelSpeedTestCommand { get; }
     public RelayCommand RefreshIpInfoCommand { get; }
 
+    // Routing Rules Commands
+    public RelayCommand SaveRulesCommand { get; }
+    public RelayCommand ResetRulesCommand { get; }
+
     public MainViewModel()
     {
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
@@ -532,6 +606,15 @@ public class MainViewModel : ViewModelBase
         {
             _isNotificationsEnabled = savedNotif;
         }
+        if (savedData.Settings.TryGetValue("CustomProxyRules", out string? proxyRulesStr))
+        {
+            _customProxyRules = proxyRulesStr;
+        }
+        if (savedData.Settings.TryGetValue("CustomDirectRules", out string? directRulesStr))
+        {
+            _customDirectRules = directRulesStr;
+        }
+        _isAutoStartEnabled = SystemProxyManager.GetAutoStartStatus();
 
         // Start Traffic & Memory Usage Timer (1 second interval)
         var timer = new System.Windows.Threading.DispatcherTimer
@@ -561,6 +644,26 @@ public class MainViewModel : ViewModelBase
                 SelectedTabIndex = tabIndex;
                 AppLogger.LogSystem($"[主控逻辑] 切换至 Tab 页面索引: {tabIndex}");
             }
+        });
+
+        SaveRulesCommand = new RelayCommand(obj =>
+        {
+            SaveState();
+            ReapplyXrayConfigIfConnected();
+            AppLogger.LogSystem("[分流规则] 域名与 IP 分流黑白名单规则已保存并应用成功！");
+            new Views.AlertWindow("规则已保存", "自定义分流规则已保存成功，并已即时生效！", true).ShowDialog();
+        });
+
+        ResetRulesCommand = new RelayCommand(obj =>
+        {
+            _customProxyRules = "";
+            _customDirectRules = "";
+            OnPropertyChanged(nameof(CustomProxyRules));
+            OnPropertyChanged(nameof(CustomDirectRules));
+            SaveState();
+            ReapplyXrayConfigIfConnected();
+            AppLogger.LogSystem("[分流规则] 已清空并重置自定义分流规则。");
+            new Views.AlertWindow("规则重置", "已成功重置所有自定义分流规则。", true).ShowDialog();
         });
 
         ToggleConnectionCommand = new RelayCommand(ToggleConnection);
@@ -637,7 +740,7 @@ public class MainViewModel : ViewModelBase
                     var global = IsGlobalMode;
                     _ = Task.Run(() =>
                     {
-                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                        string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, CustomProxyRules, CustomDirectRules);
                         _xrayManager.StartCore(configJson);
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -861,7 +964,7 @@ public class MainViewModel : ViewModelBase
 
                 _ = Task.Run(() =>
                 {
-                    string configJson = _xrayManager.GenerateClientConfig(srv, lan, global);
+                    string configJson = _xrayManager.GenerateClientConfig(srv, lan, global, CustomProxyRules, CustomDirectRules);
                     bool success = _xrayManager.StartCore(configJson);
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -936,7 +1039,9 @@ public class MainViewModel : ViewModelBase
             ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
             ["IsGlobalMode"] = IsGlobalMode.ToString(),
             ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString(),
-            ["IsNotificationsEnabled"] = IsNotificationsEnabled.ToString()
+            ["IsNotificationsEnabled"] = IsNotificationsEnabled.ToString(),
+            ["CustomProxyRules"] = CustomProxyRules,
+            ["CustomDirectRules"] = CustomDirectRules
         };
         _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
     }
@@ -1040,7 +1145,7 @@ public class MainViewModel : ViewModelBase
                 if (srv != null)
                 {
                     AppLogger.LogSystem("[订阅逻辑] 代理更新已开启，但 Xray 内核未运行，正在自动启动内核以提供代理支持...");
-                    string configJson = _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode);
+                    string configJson = _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
                     _xrayManager.StartCore(configJson);
                     await Task.Delay(1000); // 等待内核就绪
                 }
@@ -1126,7 +1231,7 @@ public class MainViewModel : ViewModelBase
             if (!_xrayManager.IsRunning)
             {
                 AppLogger.LogSystem("[节点测速] Xray 内核未运行，正在临时启动内核进行节点测速...");
-                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode);
+                string configJson = _xrayManager.GenerateClientConfig(SelectedServer, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
                 bool ok = _xrayManager.StartCore(configJson);
                 if (!ok)
                 {

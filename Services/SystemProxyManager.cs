@@ -123,4 +123,53 @@ public static class SystemProxyManager
         }
         return false;
     }
+
+    public static bool GetAutoStartStatus()
+    {
+        try
+        {
+            string runKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+            using var key = Registry.CurrentUser.OpenSubKey(runKey, false);
+            if (key != null)
+            {
+                string appName = "BerryXrayWin";
+                return key.GetValue(appName) != null;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    public static bool SetAutoStart(bool enable)
+    {
+        try
+        {
+            string runKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+            using var key = Registry.CurrentUser.OpenSubKey(runKey, true);
+            if (key != null)
+            {
+                string appName = "BerryXrayWin";
+                string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                if (enable)
+                {
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        key.SetValue(appName, $"\"{exePath}\"");
+                        AppLogger.LogSystem("[系统设置] 已开启开机自启动。");
+                    }
+                }
+                else
+                {
+                    key.DeleteValue(appName, false);
+                    AppLogger.LogSystem("[系统设置] 已关闭开机自启动。");
+                }
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[系统设置] 设置开机自启异常: {ex.Message}");
+        }
+        return false;
+    }
 }

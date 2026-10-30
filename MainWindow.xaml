@@ -1017,6 +1017,170 @@
                         <TextBlock Grid.Row="3" Text="提示：系统日志与内核日志独立隔离，各保留最近 100 条" FontSize="11" Foreground="#9CA3AF" Margin="0,8,0,0"/>
                     </Grid>
 
+                    <!-- TAB 5: 设置 (Settings Page) -->
+                    <ScrollViewer x:Name="SettingsTabGrid" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsSettingsTabSelected, Converter={StaticResource BoolToVisConverter}}">
+                        <ScrollViewer.RenderTransform>
+                            <TranslateTransform x:Name="SettingsTabTransform" X="0" Y="0"/>
+                        </ScrollViewer.RenderTransform>
+                        <StackPanel Margin="0,0,0,16">
+
+                            <!-- Header Title -->
+                            <TextBlock Text="系统与分流设置" FontSize="20" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,12"/>
+
+                            <!-- Card 1: 客户端基础功能 -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="⚙️ 客户端基础设置" FontSize="13" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,10"/>
+
+                                    <!-- 允许局域网连接 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="允许局域网连接 (Allow LAN)" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="{Binding AllowLanStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding AllowLan}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                      ToolTip="允许同局域网的其他设备使用代理"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 全局代理模式 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="全局代理模式" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding IsGlobalMode}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                      ToolTip="开启全局代理或智能分流"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 代理更新订阅 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="通过代理更新订阅" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="拉取订阅节点时通过当前已连接节点连接" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding IsUseProxyForSubUpdate}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- Windows 消息通知 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="Windows 消息通知" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="允许显示系统托盘气泡提示消息" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding IsNotificationsEnabled}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 开机自启动 -->
+                                    <DockPanel>
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="开机自动启动" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="登录 Windows 系统时自动后台运行" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
+                                                      IsChecked="{Binding IsAutoStartEnabled}"
+                                                      DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 2: 域名与 IP 分流规则 (黑白名单) -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock Text="🌐 域名与 IP 自定义分流规则" FontSize="13" FontWeight="Bold" Foreground="#111827"/>
+                                            <TextBlock Text="支持多行域名(如 example.com)、IP/CIDR(如 1.1.1.1 或 10.0.0.0/8) 或 geosite/geoip" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <!-- 走代理 (白名单) Section -->
+                                    <StackPanel Margin="0,0,0,12">
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="🔥 走代理名单 (强制走代理)" FontSize="12" FontWeight="Bold" Foreground="#2563EB" DockPanel.Dock="Left"/>
+                                            <TextBlock Text="多行输入，不带 http" FontSize="10" Foreground="#9CA3AF" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                                        </DockPanel>
+                                        <Border BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" Background="#F9FAFB">
+                                            <TextBox Text="{Binding CustomProxyRules, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Height="90" Padding="8" BorderThickness="0" Background="Transparent"
+                                                     FontFamily="Consolas, Segoe UI" FontSize="12" Foreground="#1F2937"
+                                                     ToolTip="每行填写一个域名或IP。例如：google.com, openai.com, 8.8.8.8"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- 不走代理 (黑名单) Section -->
+                                    <StackPanel Margin="0,0,0,14">
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="⚡ 不走代理名单 (直连 / 绕过代理)" FontSize="12" FontWeight="Bold" Foreground="#059669" DockPanel.Dock="Left"/>
+                                            <TextBlock Text="多行输入，不带 http" FontSize="10" Foreground="#9CA3AF" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                                        </DockPanel>
+                                        <Border BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" Background="#F9FAFB">
+                                            <TextBox Text="{Binding CustomDirectRules, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Height="90" Padding="8" BorderThickness="0" Background="Transparent"
+                                                     FontFamily="Consolas, Segoe UI" FontSize="12" Foreground="#1F2937"
+                                                     ToolTip="每行填写一个域名或IP。例如：baidu.com, qq.com, 192.168.1.0/24"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Action Buttons for Routing Rules -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Column="0" Command="{Binding SaveRulesCommand}" Content="💾 保存分流规则"
+                                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                FontSize="12" FontWeight="Bold" Padding="10,8" Margin="0,0,6,0"
+                                                Style="{StaticResource ModernButtonStyle}"/>
+
+                                        <Button Grid.Column="1" Command="{Binding ResetRulesCommand}" Content="🔄 重置为空"
+                                                Background="#F3F4F6" Foreground="#4B5563" BorderBrush="#D1D5DB"
+                                                FontSize="12" FontWeight="Medium" Padding="10,8" Margin="6,0,0,0"
+                                                Style="{StaticResource ModernButtonStyle}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 3: 监听端口信息 -->
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="🔌 本地复合代理端口" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                        <TextBlock Text="支持 SOCKS5 与 HTTP 复合代理协议" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Background="#F3F4F6" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                                        <TextBlock Text="10909" FontSize="13" FontWeight="Bold" Foreground="#2563EB"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
                 </Grid>
 
                 <!-- MOBILE-STYLE BOTTOM TAB NAVIGATION BAR -->
@@ -1027,7 +1191,7 @@
                         CornerRadius="14"
                         Padding="4,8"
                         Margin="4,12,4,0">
-                    <UniformGrid Columns="5">
+                    <UniformGrid Columns="6">
                         <!-- Tab 0: 首页 -->
                         <Button Command="{Binding SelectTabCommand}" CommandParameter="0" Cursor="Hand">
                             <Button.Template>
@@ -1057,7 +1221,7 @@
                                     <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
                                         <StackPanel HorizontalAlignment="Center">
                                             <Path x:Name="tabIcon" Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" Fill="#6B7280" Width="18" Height="18" HorizontalAlignment="Center"/>
-                                            <TextBlock x:Name="tabText" Text="测速状态" FontSize="11" FontWeight="Medium" Foreground="#6B7280" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="测速" FontSize="11" FontWeight="Medium" Foreground="#6B7280" Margin="0,3,0,0" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -1128,6 +1292,28 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <DataTrigger Binding="{Binding IsLogsTabSelected}" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
+                                            <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>
+                                            <Setter TargetName="tabText" Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Tab 5: 设置 -->
+                        <Button Command="{Binding SelectTabCommand}" CommandParameter="5" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="tabBorder" Background="Transparent" CornerRadius="10" Padding="0,6">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Path x:Name="tabIcon" Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" Fill="#6B7280" Width="18" Height="18" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="tabText" Text="设置" FontSize="11" FontWeight="Medium" Foreground="#6B7280" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSettingsTabSelected}" Value="True">
                                             <Setter TargetName="tabBorder" Property="Background" Value="#EFF6FF"/>
                                             <Setter TargetName="tabIcon" Property="Fill" Value="#2563EB"/>
                                             <Setter TargetName="tabText" Property="Foreground" Value="#2563EB"/>

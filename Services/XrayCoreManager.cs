@@ -179,28 +179,30 @@ public class XrayCoreManager
 
 
     public string GenerateClientConfig(
-    ServerNode node,
-    bool allowLan = false,
-    bool isGlobalMode = false)
-{
-    try
+        ServerNode node,
+        bool allowLan = false,
+        bool isGlobalMode = false,
+        string customProxyRules = "",
+        string customDirectRules = "")
     {
-        string listenAddress = allowLan ? "0.0.0.0" : "127.0.0.1";
-        string modeText = isGlobalMode ? "全局代理" : "智能分流";
-
-        AppLogger.LogSystem(
-            $"[XRAY核心] 正在为节点「{node.Name}」" +
-            $"({node.Address}:{node.Port}, 协议: {node.Protocol}, " +
-            $"监听: {listenAddress}, 模式: {modeText}) 生成客户端配置...");
-
-        var root = new JsonObject
+        try
         {
-            ["log"] = BuildLog(),
-            ["dns"] = BuildDns(),
-            ["inbounds"] = BuildInbounds(listenAddress),
-            ["outbounds"] = BuildOutbounds(node),
-            ["routing"] = BuildRouting(isGlobalMode)
-        };
+            string listenAddress = allowLan ? "0.0.0.0" : "127.0.0.1";
+            string modeText = isGlobalMode ? "全局代理" : "智能分流";
+
+            AppLogger.LogSystem(
+                $"[XRAY核心] 正在为节点「{node.Name}」" +
+                $"({node.Address}:{node.Port}, 协议: {node.Protocol}, " +
+                $"监听: {listenAddress}, 模式: {modeText}) 生成客户端配置...");
+
+            var root = new JsonObject
+            {
+                ["log"] = BuildLog(),
+                ["dns"] = BuildDns(),
+                ["inbounds"] = BuildInbounds(listenAddress),
+                ["outbounds"] = BuildOutbounds(node),
+                ["routing"] = BuildRouting(isGlobalMode, customProxyRules, customDirectRules)
+            };
 
         string configJson = root.ToJsonString(new JsonSerializerOptions
         {
@@ -592,149 +594,212 @@ private JsonArray BuildOutbounds(ServerNode node)
 /// <summary>
 /// 构建路由配置
 /// </summary>
-private JsonObject BuildRouting(bool isGlobalMode)
+private JsonObject BuildRouting(bool isGlobalMode, string customProxyRules = "", string customDirectRules = "")
 {
-    string globalMsg = "";
+    var rulesArray = new JsonArray();
+
+    // 1. Block UDP 443 (QUIC)
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["port"] = "443",
+        ["network"] = "udp",
+        ["outboundTag"] = "block"
+    });
+
+    // 2. Custom Proxy Rules (走代理 / 白名单 - 优先级别最高)
+    var (customProxyDomains, customProxyIps) = ParseRules(customProxyRules);
+    if (customProxyDomains.Count > 0 || customProxyIps.Count > 0)
+    {
+        var customProxyRule = new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "proxy"
+        };
+        if (customProxyDomains.Count > 0) customProxyRule["domain"] = customProxyDomains;
+        if (customProxyIps.Count > 0) customProxyRule["ip"] = customProxyIps;
+        rulesArray.Add(customProxyRule);
+    }
+
+    // 3. Custom Direct Rules (不走代理 / 黑名单 / 直连)
+    var (customDirectDomains, customDirectIps) = ParseRules(customDirectRules);
+    if (customDirectDomains.Count > 0 || customDirectIps.Count > 0)
+    {
+        var customDirectRule = new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "direct"
+        };
+        if (customDirectDomains.Count > 0) customDirectRule["domain"] = customDirectDomains;
+        if (customDirectIps.Count > 0) customDirectRule["ip"] = customDirectIps;
+        rulesArray.Add(customDirectRule);
+    }
+
+    // 4. Built-in Proxy domains
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["outboundTag"] = "proxy",
+        ["domain"] = new JsonArray
+        {
+            "geosite:google",
+            "domain:cachefly.net",
+            "domain:cachefly.com",
+            "domain:ip-api.com",
+            "domain:ip.sb",
+            "domain:ipify.org"
+        }
+    });
+
+    // 5. Built-in Direct private rules
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["outboundTag"] = "direct",
+        ["ip"] = new JsonArray { "geoip:private" }
+    });
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["outboundTag"] = "direct",
+        ["domain"] = new JsonArray { "geosite:private" }
+    });
+
+    // 6. Global mode or Smart Split mode
     if (isGlobalMode)
     {
-        globalMsg = """
-                    {
-                      "type": "field",
-                      "port": "0-65535",
-                      "outboundTag": "proxy"
-                    },
-                    """;
+        rulesArray.Add(new JsonObject
+        {
+            ["type"] = "field",
+            ["port"] = "0-65535",
+            ["outboundTag"] = "proxy"
+        });
     }
     else
     {
-        
-        globalMsg = """
-                    {
-                      "type": "field",
-                      "outboundTag": "direct",
-                      "ip": [
-                        "223.5.5.5",
-                        "223.6.6.6",
-                        "2400:3200::1",
-                        "2400:3200:baba::1",
-                        "119.29.29.29",
-                        "1.12.12.12",
-                        "120.53.53.53",
-                        "2402:4e00::",
-                        "2402:4e00:1::",
-                        "180.76.76.76",
-                        "2400:da00::6666",
-                        "114.114.114.114",
-                        "114.114.115.115",
-                        "114.114.114.119",
-                        "114.114.115.119",
-                        "114.114.114.110",
-                        "114.114.115.110",
-                        "180.184.1.1",
-                        "180.184.2.2",
-                        "101.226.4.6",
-                        "218.30.118.6",
-                        "123.125.81.6",
-                        "140.207.198.6",
-                        "1.2.4.8",
-                        "210.2.4.8",
-                        "52.80.66.66",
-                        "117.50.22.22",
-                        "2400:7fc0:849e:200::4",
-                        "2404:c2c0:85d8:901::4",
-                        "117.50.10.10",
-                        "52.80.52.52",
-                        "2400:7fc0:849e:200::8",
-                        "2404:c2c0:85d8:901::8",
-                        "117.50.60.30",
-                        "52.80.60.30"
-                      ]
-                    },
-                    {
-                      "type": "field",
-                      "outboundTag": "direct",
-                      "domain": [
-                        "domain:alidns.com",
-                        "domain:doh.pub",
-                        "domain:dot.pub",
-                        "domain:360.cn",
-                        "domain:onedns.net"
-                      ]
-                    },
-                    {
-                      "type": "field",
-                      "outboundTag": "direct",
-                      "ip": [
-                        "geoip:cn"
-                      ]
-                    },
-                    {
-                      "type": "field",
-                      "outboundTag": "direct",
-                      "domain": [
-                        "geosite:cn"
-                      ]
-                    },
-                    """;
+        // Direct DNS servers IPs
+        rulesArray.Add(new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "direct",
+            ["ip"] = new JsonArray
+            {
+                "223.5.5.5", "223.6.6.6", "2400:3200::1", "2400:3200:baba::1",
+                "119.29.29.29", "1.12.12.12", "120.53.53.53", "2402:4e00::",
+                "2402:4e00:1::", "180.76.76.76", "2400:da00::6666", "114.114.114.114",
+                "114.114.115.115", "114.114.114.119", "114.114.115.119", "114.114.114.110",
+                "114.114.115.110", "180.184.1.1", "180.184.2.2", "101.226.4.6",
+                "218.30.118.6", "123.125.81.6", "140.207.198.6", "1.2.4.8",
+                "210.2.4.8", "52.80.66.66", "117.50.22.22", "2400:7fc0:849e:200::4",
+                "2404:c2c0:85d8:901::4", "117.50.10.10", "52.80.52.52", "2400:7fc0:849e:200::8",
+                "2404:c2c0:85d8:901::8", "117.50.60.30", "52.80.60.30"
+            }
+        });
+
+        // Direct DNS domains
+        rulesArray.Add(new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "direct",
+            ["domain"] = new JsonArray
+            {
+                "domain:alidns.com", "domain:doh.pub", "domain:dot.pub",
+                "domain:360.cn", "domain:onedns.net"
+            }
+        });
+
+        // geoip:cn & geosite:cn -> direct
+        rulesArray.Add(new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "direct",
+            ["ip"] = new JsonArray { "geoip:cn" }
+        });
+        rulesArray.Add(new JsonObject
+        {
+            ["type"] = "field",
+            ["outboundTag"] = "direct",
+            ["domain"] = new JsonArray { "geosite:cn" }
+        });
     }
-    
-    string json = $$"""
-      {
-        "domainStrategy": "AsIs",
-        "rules": [
-          {
-            "type": "field",
-            "port": "443",
-            "network": "udp",
-            "outboundTag": "block"
-          },
-          {
-            "type": "field",
-            "outboundTag": "proxy",
-            "domain": [
-              "geosite:google",
-              "domain:cachefly.net",
-              "domain:cachefly.com",
-              "domain:ip-api.com",
-              "domain:ip.sb",
-              "domain:ipify.org"
-            ]
-          },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "ip": [
-              "geoip:private"
-            ]
-          },
-          {
-            "type": "field",
-            "outboundTag": "direct",
-            "domain": [
-              "geosite:private"
-            ]
-          },
-          {{globalMsg}}
-          {
-            "type": "field",
-            "inboundTag": [
-              "direct-dns-1",
-              "direct-dns-2",
-              "direct-dns-3"
-            ],
-            "outboundTag": "direct"
-          },
-          {
-            "type": "field",
-            "inboundTag": [
-              "dns-module"
-            ],
-            "outboundTag": "proxy"
-          }
-        ]
-      }
-      """;
-    return JsonObject.Parse(json)!.AsObject();
+
+    // 7. Inbound DNS tag routing
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["inboundTag"] = new JsonArray { "direct-dns-1", "direct-dns-2", "direct-dns-3" },
+        ["outboundTag"] = "direct"
+    });
+    rulesArray.Add(new JsonObject
+    {
+        ["type"] = "field",
+        ["inboundTag"] = new JsonArray { "dns-module" },
+        ["outboundTag"] = "proxy"
+    });
+
+    return new JsonObject
+    {
+        ["domainStrategy"] = "AsIs",
+        ["rules"] = rulesArray
+    };
+}
+
+private (JsonArray domains, JsonArray ips) ParseRules(string rulesText)
+{
+    var domains = new JsonArray();
+    var ips = new JsonArray();
+
+    if (string.IsNullOrWhiteSpace(rulesText))
+        return (domains, ips);
+
+    string[] lines = rulesText.Split(new[] { '\r', '\n', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+    foreach (var rawLine in lines)
+    {
+        string line = rawLine.Trim();
+        if (string.IsNullOrEmpty(line) || line.StartsWith("#") || line.StartsWith("//"))
+            continue;
+
+        if (line.StartsWith("geoip:", StringComparison.OrdinalIgnoreCase) ||
+            line.StartsWith("ip:", StringComparison.OrdinalIgnoreCase))
+        {
+            ips.Add(line);
+        }
+        else if (IsIpOrCidr(line))
+        {
+            ips.Add(line);
+        }
+        else
+        {
+            if (line.StartsWith("geosite:", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("domain:", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("full:", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("regexp:", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("keyword:", StringComparison.OrdinalIgnoreCase))
+            {
+                domains.Add(line);
+            }
+            else
+            {
+                domains.Add($"domain:{line}");
+            }
+        }
+    }
+
+    return (domains, ips);
+}
+
+private bool IsIpOrCidr(string input)
+{
+    if (string.IsNullOrWhiteSpace(input)) return false;
+
+    string ipPart = input;
+    int slashIndex = input.IndexOf('/');
+    if (slashIndex > 0)
+    {
+        ipPart = input.Substring(0, slashIndex);
+    }
+
+    return System.Net.IPAddress.TryParse(ipPart, out _);
 }
 
 
