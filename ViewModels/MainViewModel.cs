@@ -1207,7 +1207,29 @@ public class MainViewModel : ViewModelBase
                     return;
                 }
                 startedTempCore = true;
-                await Task.Delay(1000, _speedTestCts.Token);
+
+                // 智能轮询等待代理端口 10909 启动就绪 (最多等待 5 秒)
+                SpeedTestStatusText = "等待 Xray 代理端口就绪...";
+                bool portReady = false;
+                for (int i = 0; i < 10; i++)
+                {
+                    if (_speedTestCts.IsCancellationRequested) break;
+                    await Task.Delay(500, _speedTestCts.Token);
+                    int ms = await LatencyTester.TestTcpLatencyAsync("127.0.0.1", 10909, 400);
+                    if (ms > 0)
+                    {
+                        portReady = true;
+                        break;
+                    }
+                }
+                if (!portReady && !_speedTestCts.IsCancellationRequested)
+                {
+                    SpeedTestStatusText = "测速失败: 代理端口启动超时";
+                    AppLogger.LogSystem("[节点测速] 错误: Xray 内核代理端口 10909 启动超时。");
+                    if (startedTempCore && !IsConnected) _xrayManager.StopCore();
+                    IsSpeedTesting = false;
+                    return;
+                }
             }
 
             var progress = new Progress<SpeedTestReport>(report =>

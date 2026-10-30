@@ -6,16 +6,16 @@
         xmlns:local="clr-namespace:chrelyonly_xray_win"
         xmlns:vm="clr-namespace:chrelyonly_xray_win.ViewModels"
         mc:Ignorable="d"
-        Title="莓莓修仙版" Height="740" Width="460"
+        Title="莓莓修仙版" Height="1110" Width="690"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         WindowStartupLocation="CenterScreen"
-        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="ClearType"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
-        FontFamily="Microsoft YaHei UI, Segoe UI, sans-serif">
+        FontFamily="YouYuan, Microsoft YaHei, Segoe UI, sans-serif">
 
     <Window.DataContext>
         <vm:MainViewModel />
@@ -25,11 +25,14 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
     </Window.Resources>
 
-    <!-- Outer Window Border with Rounded Corners & Shadow -->
+    <!-- Outer Window Border with Rounded Corners & Shadow (Scaled 1.5x) -->
     <Border Background="{StaticResource WindowBackgroundBrush}"
             CornerRadius="16"
             BorderBrush="#000000"
             BorderThickness="0">
+        <Border.LayoutTransform>
+            <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+        </Border.LayoutTransform>
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.18" Color="#000000"/>
         </Border.Effect>
