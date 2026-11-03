@@ -12,6 +12,7 @@ public class SubscriptionItem : ViewModelBase
     private DateTime? _lastUpdated;
     private bool _autoUpdate = true;
     private bool _isUpdating = false;
+    private bool _isFixed = false;
 
     public ObservableCollection<ServerNode> Nodes { get; } = new();
 
@@ -37,6 +38,12 @@ public class SubscriptionItem : ViewModelBase
     {
         get => _nodeCount;
         set => SetProperty(ref _nodeCount, value);
+    }
+
+    public bool IsFixed
+    {
+        get => _isFixed;
+        set => SetProperty(ref _isFixed, value);
     }
 
     public DateTime? LastUpdated

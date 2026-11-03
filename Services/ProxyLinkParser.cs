@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using System.Web;
 using chrelyonly_xray_win.Models;
 
@@ -16,9 +19,17 @@ public static class ProxyLinkParser
             {
                 return ParseVless(shareUrl);
             }
-            if (shareUrl.StartsWith("hysteria2://", StringComparison.OrdinalIgnoreCase))
+            if (shareUrl.StartsWith("hysteria2://", StringComparison.OrdinalIgnoreCase) || shareUrl.StartsWith("hysteria://", StringComparison.OrdinalIgnoreCase))
             {
                 return ParseHy2(shareUrl);
+            }
+            if (shareUrl.StartsWith("trojan://", StringComparison.OrdinalIgnoreCase))
+            {
+                return ParseTrojan(shareUrl);
+            }
+            if (shareUrl.StartsWith("vmess://", StringComparison.OrdinalIgnoreCase))
+            {
+                return ParseVmess(shareUrl);
             }
         }
         catch
@@ -27,6 +38,70 @@ public static class ProxyLinkParser
         }
 
         return null;
+    }
+
+    public static string ExportShareLink(ServerNode node)
+    {
+        if (node == null) return string.Empty;
+        try
+        {
+            var protocol = node.Protocol?.ToLowerInvariant() ?? "vless";
+            var nameEnc = Uri.EscapeDataString(node.Name ?? "Node");
+
+            if (protocol.Contains("vless"))
+            {
+                var sb = new StringBuilder();
+                sb.Append($"vless://{node.Uuid}@{node.Address}:{node.Port}?");
+                var queryParams = new List<string>();
+                if (!string.IsNullOrWhiteSpace(node.Security)) queryParams.Add($"security={node.Security}");
+                if (!string.IsNullOrWhiteSpace(node.Transport)) queryParams.Add($"type={node.Transport.ToLowerInvariant()}");
+                if (!string.IsNullOrWhiteSpace(node.Sni)) queryParams.Add($"sni={Uri.EscapeDataString(node.Sni)}");
+                if (!string.IsNullOrWhiteSpace(node.PublicKey)) queryParams.Add($"pbk={Uri.EscapeDataString(node.PublicKey)}");
+                if (!string.IsNullOrWhiteSpace(node.ShortId)) queryParams.Add($"sid={Uri.EscapeDataString(node.ShortId)}");
+                if (!string.IsNullOrWhiteSpace(node.Spx)) queryParams.Add($"spx={Uri.EscapeDataString(node.Spx)}");
+                if (!string.IsNullOrWhiteSpace(node.Flow)) queryParams.Add($"flow={Uri.EscapeDataString(node.Flow)}");
+                if (!string.IsNullOrWhiteSpace(node.Encryption)) queryParams.Add($"encryption={Uri.EscapeDataString(node.Encryption)}");
+                if (!string.IsNullOrWhiteSpace(node.Host)) queryParams.Add($"host={Uri.EscapeDataString(node.Host)}");
+                if (!string.IsNullOrWhiteSpace(node.Path)) queryParams.Add($"path={Uri.EscapeDataString(node.Path)}");
+
+                sb.Append(string.Join("&", queryParams));
+                sb.Append($"#{nameEnc}");
+                return sb.ToString();
+            }
+            else if (protocol.Contains("hysteria") || protocol.Contains("hy2"))
+            {
+                var sb = new StringBuilder();
+                sb.Append($"hysteria2://{node.Uuid}@{node.Address}:{node.Port}?");
+                var queryParams = new List<string>();
+                if (!string.IsNullOrWhiteSpace(node.Sni)) queryParams.Add($"sni={Uri.EscapeDataString(node.Sni)}");
+                if (!string.IsNullOrWhiteSpace(node.Obfs)) queryParams.Add($"obfs={Uri.EscapeDataString(node.Obfs)}");
+                if (!string.IsNullOrWhiteSpace(node.ObfsPassword)) queryParams.Add($"obfs-password={Uri.EscapeDataString(node.ObfsPassword)}");
+                sb.Append(string.Join("&", queryParams));
+                sb.Append($"#{nameEnc}");
+                return sb.ToString();
+            }
+            else if (protocol.Contains("trojan"))
+            {
+                var sb = new StringBuilder();
+                sb.Append($"trojan://{node.Uuid}@{node.Address}:{node.Port}?");
+                var queryParams = new List<string>();
+                if (!string.IsNullOrWhiteSpace(node.Sni)) queryParams.Add($"sni={Uri.EscapeDataString(node.Sni)}");
+                if (!string.IsNullOrWhiteSpace(node.Host)) queryParams.Add($"host={Uri.EscapeDataString(node.Host)}");
+                if (!string.IsNullOrWhiteSpace(node.Path)) queryParams.Add($"path={Uri.EscapeDataString(node.Path)}");
+                sb.Append(string.Join("&", queryParams));
+                sb.Append($"#{nameEnc}");
+                return sb.ToString();
+            }
+            else
+            {
+                return $"vless://{node.Uuid}@{node.Address}:{node.Port}?security=none#{nameEnc}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[导出链接] 发生异常: {ex.Message}");
+            return $"vless://{node.Uuid}@{node.Address}:{node.Port}#{Uri.EscapeDataString(node.Name ?? "Node")}";
+        }
     }
 
     private static ServerNode ParseVless(string url)
@@ -62,7 +137,6 @@ public static class ProxyLinkParser
     }
     private static ServerNode ParseHy2(string url)
     {
-        // Format: vless://uuid@host:port?security=...&sni=...&type=...#remark
         var uri = new Uri(url);
         var userInfo = HttpUtility.UrlDecode(uri.UserInfo);
         var remark = HttpUtility.UrlDecode(uri.Fragment.TrimStart('#'));
@@ -85,17 +159,45 @@ public static class ProxyLinkParser
 
     private static ServerNode ParseVmess(string url)
     {
-        // Simplified VMess parse placeholder
-        var node = new ServerNode
+        try
         {
-            Name = "VMess 节点",
-            Address = "vmess.example.com",
-            Port = 443,
-            Protocol = "VMess",
-            Security = "auto",
-            Transport = "TCP"
-        };
-        return node;
+            var base64Part = url.Substring("vmess://".Length).Trim();
+            string decoded = TryDecodeBase64(base64Part);
+            var node = new ServerNode
+            {
+                Protocol = "VMess",
+                Name = "VMess 节点",
+                Address = "127.0.0.1",
+                Port = 443
+            };
+            using var doc = JsonDocument.Parse(decoded);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("add", out var add)) node.Address = add.GetString() ?? "127.0.0.1";
+            if (root.TryGetProperty("port", out var port))
+            {
+                if (port.ValueKind == JsonValueKind.Number) node.Port = port.GetInt32();
+                else if (int.TryParse(port.GetString(), out var p)) node.Port = p;
+            }
+            if (root.TryGetProperty("ps", out var ps)) node.Name = ps.GetString() ?? "VMess 节点";
+            if (root.TryGetProperty("id", out var id)) node.Uuid = id.GetString() ?? "";
+            if (root.TryGetProperty("net", out var net)) node.Transport = net.GetString()?.ToUpperInvariant() ?? "TCP";
+            if (root.TryGetProperty("tls", out var tls)) node.Security = (tls.GetString() == "tls") ? "TLS" : "none";
+            if (root.TryGetProperty("host", out var host)) node.Host = host.GetString() ?? "";
+            if (root.TryGetProperty("path", out var path)) node.Path = path.GetString() ?? "";
+            return node;
+        }
+        catch
+        {
+            return new ServerNode
+            {
+                Name = "VMess 节点",
+                Address = "vmess.example.com",
+                Port = 443,
+                Protocol = "VMess",
+                Security = "auto",
+                Transport = "TCP"
+            };
+        }
     }
 
     private static ServerNode ParseTrojan(string url)
@@ -104,6 +206,8 @@ public static class ProxyLinkParser
         var remark = HttpUtility.UrlDecode(uri.Fragment.TrimStart('#'));
         if (string.IsNullOrEmpty(remark)) remark = uri.Host;
 
+        var query = HttpUtility.ParseQueryString(uri.Query);
+
         return new ServerNode
         {
             Name = remark,
@@ -111,7 +215,31 @@ public static class ProxyLinkParser
             Port = uri.Port > 0 ? uri.Port : 443,
             Protocol = "Trojan",
             Security = "TLS",
-            Transport = "TCP"
+            Transport = "TCP",
+            Uuid = uri.UserInfo ?? "",
+            Sni = query["sni"] ?? "",
+            Host = query["host"] ?? "",
+            Path = query["path"] ?? ""
         };
+    }
+
+    private static string TryDecodeBase64(string input)
+    {
+        try
+        {
+            string padded = input.Replace('-', '+').Replace('_', '/');
+            switch (padded.Length % 4)
+            {
+                case 2: padded += "=="; break;
+                case 3: padded += "="; break;
+                case 1: padded += "="; break;
+            }
+            var bytes = Convert.FromBase64String(padded);
+            return Encoding.UTF8.GetString(bytes);
+        }
+        catch
+        {
+            return input;
+        }
     }
 }

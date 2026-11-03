@@ -276,7 +276,7 @@ public partial class MainViewModel : ViewModelBase
 
     public string RoutingModeStatusText => IsGlobalMode ? "全局代理模式 (所有流量走代理)" : "智能分流模式 (大陆直连/海外代理)";
 
-    public string AppVersionText => "v20261030修仙版;Xray: 26.10.21";
+    public string AppVersionText => $"v{Services.UpdateCheckService.CurrentVersionCode}修仙版喵~";
 
     public string MemoryUsageText
     {
@@ -510,6 +510,8 @@ public partial class MainViewModel : ViewModelBase
     public RelayCommand EditSubDialogCommand { get; }
     public RelayCommand DeleteSubDialogCommand { get; }
     public RelayCommand UpdateSubscriptionCommand { get; }
+    public RelayCommand PasteImportNodeCommand { get; }
+    public RelayCommand CopyNodeLinkCommand { get; }
 
     // Traffic, Speed Test & IP Commands
     public RelayCommand ResetTrafficCommand { get; }
@@ -556,18 +558,6 @@ public partial class MainViewModel : ViewModelBase
             foreach (var node in _selectedSubscription.Nodes)
             {
                 Servers.Add(node);
-            }
-        }
-
-        if (Servers.Count == 0 && savedData.CachedServers.Count > 0)
-        {
-            foreach (var srv in savedData.CachedServers)
-            {
-                if (Subscriptions.Count > 0)
-                {
-                    Subscriptions[0].Nodes.Add(srv);
-                }
-                Servers.Add(srv);
             }
         }
 
@@ -779,6 +769,87 @@ public partial class MainViewModel : ViewModelBase
             if (target != null)
             {
                 await UpdateSubscriptionItemAsync(target, showAlert: true);
+            }
+        });
+
+        PasteImportNodeCommand = new RelayCommand(() =>
+        {
+            try
+            {
+                if (!Clipboard.ContainsText())
+                {
+                    ShowModalDialog(new Views.AlertWindow("粘贴导入失败", "剪贴板中没有文本内容，请先复制节点分享链接（如 vless://...）。", false));
+                    return;
+                }
+                string clipText = Clipboard.GetText().Trim();
+                var node = ProxyLinkParser.ParseShareLink(clipText);
+                if (node == null)
+                {
+                    var lines = clipText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        node = ProxyLinkParser.ParseShareLink(line.Trim());
+                        if (node != null) break;
+                    }
+                }
+
+                if (node == null)
+                {
+                    ShowModalDialog(new Views.AlertWindow("粘贴导入失败", "无法从剪贴板解析出有效的代理节点链接（支持 vless://, hysteria2:// 等）。", false));
+                    return;
+                }
+
+                var fixedSub = Subscriptions.FirstOrDefault(s => s.IsFixed || s.Id == "fixed-general-subscription");
+                if (fixedSub == null)
+                {
+                    fixedSub = new SubscriptionItem
+                    {
+                        Id = "fixed-general-subscription",
+                        Name = "通用/自定义订阅 (内置)",
+                        Url = "local://general",
+                        IsFixed = true
+                    };
+                    Subscriptions.Insert(0, fixedSub);
+                }
+
+                node.SubscriptionId = fixedSub.Id;
+                fixedSub.Nodes.Add(node);
+                fixedSub.NodeCount = fixedSub.Nodes.Count;
+                fixedSub.LastUpdated = DateTime.Now;
+
+                if (SelectedSubscription == fixedSub)
+                {
+                    Servers.Add(node);
+                    if (SelectedServer == null)
+                    {
+                        SelectedServer = node;
+                    }
+                }
+
+                SaveState();
+                AppLogger.LogSystem($"[节点导入] 成功通过剪贴板导入节点: {node.Name} ({node.Protocol} - {node.Address}:{node.Port}) 到固定通用订阅。");
+                ShowModalDialog(new Views.AlertWindow("导入成功", $"成功导入节点到【{fixedSub.Name}】：\n\n🔹 名称: {node.Name}\n🔹 协议: {node.Protocol}\n🔹 地址: {node.Address}:{node.Port}", true));
+            }
+            catch (Exception ex)
+            {
+                ShowModalDialog(new Views.AlertWindow("导入错误", $"粘贴导入节点时发生异常: {ex.Message}", false));
+            }
+        });
+
+        CopyNodeLinkCommand = new RelayCommand(obj =>
+        {
+            var node = obj as ServerNode ?? SelectedServer;
+            if (node == null) return;
+            try
+            {
+                string link = ProxyLinkParser.ExportShareLink(node);
+                Clipboard.SetText(link);
+                AppLogger.LogSystem($"[节点导出] 已成功复制节点分享链接到剪贴板: {node.Name}");
+                ShowModalDialog(new Views.AlertWindow("导出成功", $"已成功将节点分享链接复制到剪贴板！\n\n节点名称: {node.Name}\n链接: {link}", true));
+            }
+            catch (Exception ex)
+            {
+                ShowModalDialog(new Views.AlertWindow("导出失败", $"复制节点链接失败: {ex.Message}", false));
             }
         });
 

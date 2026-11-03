@@ -40,7 +40,8 @@ public static class SqliteStorageService
                     Url TEXT,
                     NodeCount INTEGER,
                     LastUpdated TEXT,
-                    AutoUpdate INTEGER
+                    AutoUpdate INTEGER,
+                    IsFixed INTEGER
                 );
 
                 CREATE TABLE IF NOT EXISTS Servers (
@@ -106,6 +107,17 @@ public static class SqliteStorageService
                 }
             }
 
+            try
+            {
+                using var alterSubCmd = connection.CreateCommand();
+                alterSubCmd.CommandText = "ALTER TABLE Subscriptions ADD COLUMN IsFixed INTEGER;";
+                alterSubCmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // 已存在，忽略
+            }
+
             AppLogger.LogSystem("[SQLite存储] SQLite 数据库表结构初始化成功。");
         }
         catch (Exception ex)
@@ -127,7 +139,7 @@ public static class SqliteStorageService
             // 1. Load Subscriptions
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id, Name, Url, NodeCount, LastUpdated, AutoUpdate FROM Subscriptions";
+                cmd.CommandText = "SELECT Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed FROM Subscriptions";
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -138,18 +150,35 @@ public static class SqliteStorageService
                         Url = reader.IsDBNull(2) ? "" : reader.GetString(2),
                         NodeCount = reader.GetInt32(3),
                         LastUpdated = reader.IsDBNull(4) ? null : DateTime.Parse(reader.GetString(4)),
-                        AutoUpdate = reader.GetInt32(5) == 1
+                        AutoUpdate = reader.GetInt32(5) == 1,
+                        IsFixed = reader.FieldCount > 6 && !reader.IsDBNull(6) && reader.GetInt32(6) == 1
                     };
                     model.Subscriptions.Add(sub);
                 }
             }
 
-            if (model.Subscriptions.Count == 0)
+            // Ensure fixed subscription always exists and is at index 0
+            var fixedSub = model.Subscriptions.FirstOrDefault(s => s.Id == "fixed-general-subscription" || s.IsFixed);
+            if (fixedSub == null)
             {
-                var defaultSub = new SubscriptionItem
+                fixedSub = new SubscriptionItem
                 {
+                    Id = "fixed-general-subscription",
+                    Name = "通用/自定义订阅 (内置)",
+                    Url = "local://general",
+                    IsFixed = true
                 };
-                model.Subscriptions.Add(defaultSub);
+                model.Subscriptions.Insert(0, fixedSub);
+            }
+            else
+            {
+                fixedSub.IsFixed = true;
+                if (string.IsNullOrEmpty(fixedSub.Id))
+                {
+                    fixedSub.Id = "fixed-general-subscription";
+                }
+                model.Subscriptions.Remove(fixedSub);
+                model.Subscriptions.Insert(0, fixedSub);
             }
 
             // 2. Load Servers
@@ -194,9 +223,10 @@ public static class SqliteStorageService
                     {
                         sub.Nodes.Add(node);
                     }
-                    else if (model.Subscriptions.Count > 0)
+                    else
                     {
-                        model.Subscriptions[0].Nodes.Add(node);
+                        node.SubscriptionId = fixedSub.Id;
+                        fixedSub.Nodes.Add(node);
                     }
                 }
             }
@@ -258,8 +288,8 @@ public static class SqliteStorageService
                     using var cmd = connection.CreateCommand();
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"
-                        INSERT INTO Subscriptions (Id, Name, Url, NodeCount, LastUpdated, AutoUpdate)
-                        VALUES (@Id, @Name, @Url, @NodeCount, @LastUpdated, @AutoUpdate);
+                        INSERT INTO Subscriptions (Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed)
+                        VALUES (@Id, @Name, @Url, @NodeCount, @LastUpdated, @AutoUpdate, @IsFixed);
                     ";
                     cmd.Parameters.AddWithValue("@Id", sub.Id ?? Guid.NewGuid().ToString());
                     cmd.Parameters.AddWithValue("@Name", sub.Name ?? "");
@@ -267,6 +297,7 @@ public static class SqliteStorageService
                     cmd.Parameters.AddWithValue("@NodeCount", sub.Nodes.Count > 0 ? sub.Nodes.Count : sub.NodeCount);
                     cmd.Parameters.AddWithValue("@LastUpdated", sub.LastUpdated.HasValue ? sub.LastUpdated.Value.ToString("o") : (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@AutoUpdate", sub.AutoUpdate ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@IsFixed", (sub.IsFixed || sub.Id == "fixed-general-subscription") ? 1 : 0);
                     await cmd.ExecuteNonQueryAsync();
 
                     foreach (var node in sub.Nodes)

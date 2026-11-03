@@ -308,6 +308,13 @@ public partial class MainWindow : Window
 
     private void ShowEditSubscriptionDialog(SubscriptionItem item)
     {
+        if (item.IsFixed || item.Id == "fixed-general-subscription")
+        {
+            var alertDlg = new AlertWindow("无法编辑", $"“{item.Name}” 是系统内置的固定通用订阅列表，不能被编辑！", false) { Owner = this };
+            ViewModel.ShowModalDialog(alertDlg);
+            return;
+        }
+
         var dlg = new EditSubscriptionWindow("编辑订阅源", item.Name, item.Url) { Owner = this };
         if (ViewModel.ShowModalDialog(dlg) == true)
         {
@@ -320,6 +327,13 @@ public partial class MainWindow : Window
 
     private void ShowDeleteSubscriptionConfirmation(SubscriptionItem item)
     {
+        if (item.IsFixed || item.Id == "fixed-general-subscription")
+        {
+            var alertDlg = new AlertWindow("无法删除", $"“{item.Name}” 是系统内置的固定通用订阅列表，不能被删除！", false) { Owner = this };
+            ViewModel.ShowModalDialog(alertDlg);
+            return;
+        }
+
         var confirmDlg = new ConfirmWindow("确认删除订阅", $"确定要删除订阅源“{item.Name}”吗？此操作无法撤销。") { Owner = this };
         if (ViewModel.ShowModalDialog(confirmDlg) == true)
         {

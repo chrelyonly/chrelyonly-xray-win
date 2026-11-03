@@ -701,6 +701,19 @@
                                         </Grid>
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <!-- Copy / Export Node Button -->
+                                            <Button Command="{Binding DataContext.CopyNodeLinkCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="复制并导出该节点的分享链接 (vless:// 等)"
+                                                    Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                    Style="{StaticResource ModernButtonStyle}"
+                                                    Padding="8,4" Margin="0,0,6,0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="📋 " FontSize="11"/>
+                                                    <TextBlock Text="导出" FontSize="12" FontWeight="Medium"/>
+                                                </StackPanel>
+                                            </Button>
+
                                             <!-- Single Node Latency Test Button -->
                                             <Button Command="{Binding DataContext.TestNodeLatencyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                     CommandParameter="{Binding}" Style="{StaticResource IconButtonCategoryStyle}" ToolTip="点击测试该节点延迟">
@@ -758,9 +771,16 @@
                                               ToolTip="开启后通过本地代理 (127.0.0.1:10909) 更新订阅节点"/>
                             </StackPanel>
 
-                            <Button Grid.Column="2" Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
-                                    Background="#2563EB" Foreground="#FFFFFF" Padding="14,8"
-                                    FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Button Content="📥 粘贴导入" Command="{Binding PasteImportNodeCommand}"
+                                        Background="#10B981" Foreground="#FFFFFF" Padding="12,8"
+                                        FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"
+                                        Margin="0,0,8,0"
+                                        ToolTip="从剪贴板粘贴导入单个代理节点到固定通用订阅中"/>
+                                <Button Content="+ 新增订阅" Command="{Binding AddSubDialogCommand}"
+                                        Background="#2563EB" Foreground="#FFFFFF" Padding="14,8"
+                                        FontSize="13" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+                            </StackPanel>
                         </Grid>
 
                         <!-- Subscriptions List -->
@@ -810,7 +830,22 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"/>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                                <Border Background="#DBEAFE" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Text="🔒 内置固定" FontSize="11" FontWeight="Bold" Foreground="#1E40AF"/>
+                                                </Border>
+                                            </StackPanel>
                                             <Border Grid.Column="1" Background="#DCFCE7" CornerRadius="6" Padding="8,3">
                                                 <TextBlock Text="{Binding NodeCount, StringFormat={}{0} 个节点}" FontSize="12" FontWeight="Bold" Foreground="#15803D"/>
                                             </Border>
@@ -828,12 +863,44 @@
 
                                             <!-- Card Operation Buttons -->
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <!-- Paste Import Button for Fixed Sub -->
+                                                <Button Content="📥 粘贴导入"
+                                                        Command="{Binding DataContext.PasteImportNodeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                        Padding="10,5" FontSize="12" Margin="0,0,6,0">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                            <Setter Property="Background" Value="#DCFCE7"/>
+                                                            <Setter Property="Foreground" Value="#15803D"/>
+                                                            <Setter Property="BorderBrush" Value="#BBF7D0"/>
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+
                                                 <!-- Edit Button -->
                                                 <Button Content="✏️ 编辑"
                                                         Command="{Binding DataContext.EditSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                         CommandParameter="{Binding}"
-                                                        Style="{StaticResource ModernButtonStyle}"
-                                                        Padding="10,5" FontSize="12" Margin="0,0,6,0"/>
+                                                        Padding="10,5" FontSize="12" Margin="0,0,6,0">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                            <Setter Property="Background" Value="#F3F4F6"/>
+                                                            <Setter Property="Foreground" Value="#374151"/>
+                                                            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
 
                                                 <!-- Refresh Button -->
                                                 <Button Command="{Binding DataContext.UpdateSubscriptionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
@@ -844,7 +911,11 @@
                                                             <Setter Property="Background" Value="#EFF6FF"/>
                                                             <Setter Property="Foreground" Value="#2563EB"/>
                                                             <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                                                            <Setter Property="Visibility" Value="Visible"/>
                                                             <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding IsUpdating}" Value="True">
                                                                     <Setter Property="IsEnabled" Value="False"/>
                                                                     <Setter Property="Background" Value="#E5E7EB"/>
@@ -875,9 +946,20 @@
                                                 <Button Content="🗑️ 删除"
                                                         Command="{Binding DataContext.DeleteSubDialogCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                         CommandParameter="{Binding}"
-                                                        Background="#FEE2E2" Foreground="#EF4444" BorderBrush="#FCA5A5"
-                                                        Style="{StaticResource ModernButtonStyle}"
-                                                        Padding="10,5" FontSize="12"/>
+                                                        Padding="10,5" FontSize="12">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                            <Setter Property="Background" Value="#FEE2E2"/>
+                                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                                            <Setter Property="BorderBrush" Value="#FCA5A5"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
                                             </StackPanel>
                                         </Grid>
                                     </Grid>
