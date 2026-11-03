@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:chrelyonly_xray_win"
         xmlns:vm="clr-namespace:chrelyonly_xray_win.ViewModels"
         mc:Ignorable="d"
-        Title="莓莓修仙版" Height="1110" Width="690"
+        Title="莓莓修仙版" Height="720" Width="440"
+        MinWidth="380" MinHeight="540"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -15,7 +16,8 @@
         TextOptions.TextRenderingMode="ClearType"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
-        FontFamily="YouYuan, Microsoft YaHei, Segoe UI, sans-serif">
+        FontFamily="YouYuan, Microsoft YaHei, Segoe UI, sans-serif"
+        PreviewMouseWheel="OnWindowPreviewMouseWheel">
 
     <Window.DataContext>
         <vm:MainViewModel />
@@ -25,19 +27,19 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
     </Window.Resources>
 
-    <!-- Outer Window Border with Rounded Corners & Shadow (Scaled 1.5x) -->
+    <!-- Outer Window Border with Rounded Corners & Shadow (Dynamic Scaling) -->
     <Border Background="{StaticResource WindowBackgroundBrush}"
-            CornerRadius="16"
+            CornerRadius="10"
             BorderBrush="#000000"
             BorderThickness="0">
         <Border.LayoutTransform>
-            <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}"/>
         </Border.LayoutTransform>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.18" Color="#000000"/>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.15" Color="#000000"/>
         </Border.Effect>
 
-        <Grid Margin="5">
+        <Grid Margin="2">
             <!-- Background Content Grid with Gaussian Blur Effect when Modal is Open -->
             <Grid x:Name="MainContentGrid">
                 <Grid.Style>
@@ -1086,6 +1088,39 @@
 
                                     <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
 
+                                    <!-- 界面显示缩放比例 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="界面显示缩放比例" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="支持 Ctrl + 鼠标滑轮实时缩放界面" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Button Command="{Binding ZoomOutCommand}" Content="➖" Width="26" Height="26" Style="{StaticResource IconButtonCategoryStyle}" ToolTip="缩小界面"/>
+                                            <TextBlock Text="{Binding UiScalePercentText}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" VerticalAlignment="Center" Margin="6,0" Width="38" TextAlignment="Center"/>
+                                            <Button Command="{Binding ZoomInCommand}" Content="➕" Width="26" Height="26" Style="{StaticResource IconButtonCategoryStyle}" ToolTip="放大界面"/>
+                                            <Button Command="{Binding ResetZoomCommand}" Content="重置" Padding="6,3" FontSize="11" Margin="6,0,0,0" Style="{StaticResource ModernButtonStyle}" ToolTip="恢复默认 100% 缩放"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 重置窗口与显示比例 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="重置窗口尺寸与缩放" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="一键恢复默认窗口尺寸 (480x760) 与 100% 缩放" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding ResetDefaultSizeCommand}"
+                                                Content="🔄 恢复默认"
+                                                Background="#FEF2F2" Foreground="#DC2626" BorderBrush="#FCA5A5"
+                                                FontSize="11" FontWeight="Bold" Padding="10,5"
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Style="{StaticResource ModernButtonStyle}"
+                                                ToolTip="恢复默认窗口大小与 100% 缩放"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
                                     <!-- 软件在线更新 -->
                                     <DockPanel>
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
@@ -1342,36 +1377,41 @@
 
                 <!-- Bottom Fixed Version & Memory Info Bar -->
                 <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="12,5" Margin="4,4,4,4">
-                    <Grid>
+                    <Grid VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
+                        <!-- 左侧：版本号 -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="ℹ️ 版本:" FontSize="11" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding AppVersionText}" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB"/>
+                            <TextBlock Text="ℹ️ 版本:" FontSize="11" FontWeight="Bold" Foreground="#374151" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="{Binding AppVersionText}" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                            <Button Command="{Binding CheckUpdateCommand}"
-                                    Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
-                                    FontSize="10" FontWeight="Bold" Padding="8,3" Margin="0,0,12,0"
-                                    ToolTip="检查是否有最新版本">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                        <Setter Property="Content" Value="🔄 检查更新"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
-                                                <Setter Property="Content" Value="⏳ 检测中..."/>
-                                                <Setter Property="IsEnabled" Value="False"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <TextBlock Text="⚡ 内存:" FontSize="11" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding MemoryUsageText}" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                        <!-- 中间：检查更新按钮 -->
+                        <Button Grid.Column="1" Command="{Binding CheckUpdateCommand}"
+                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                FontSize="10" FontWeight="Bold" Padding="8,2" Height="22" VerticalAlignment="Center" VerticalContentAlignment="Center" Margin="10,0"
+                                ToolTip="检查是否有最新版本">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                    <Setter Property="Content" Value="🔄 检查更新"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
+                                            <Setter Property="Content" Value="⏳ 检测中..."/>
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <!-- 右侧：内存使用 -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <TextBlock Text="⚡ 内存:" FontSize="11" FontWeight="Bold" Foreground="#374151" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="{Binding MemoryUsageText}" FontSize="11" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -1382,6 +1422,16 @@
                     CornerRadius="14"
                     Visibility="{Binding IsModalOpen, Converter={StaticResource BoolToVisConverter}}"
                     IsHitTestVisible="True"/>
+
+            <!-- Window Resize Edge Grips -->
+            <Rectangle Height="6" VerticalAlignment="Top" HorizontalAlignment="Stretch" Fill="Transparent" Cursor="SizeNS" MouseLeftButtonDown="OnResizeTop"/>
+            <Rectangle Height="6" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Fill="Transparent" Cursor="SizeNS" MouseLeftButtonDown="OnResizeBottom"/>
+            <Rectangle Width="6" HorizontalAlignment="Left" VerticalAlignment="Stretch" Fill="Transparent" Cursor="SizeWE" MouseLeftButtonDown="OnResizeLeft"/>
+            <Rectangle Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch" Fill="Transparent" Cursor="SizeWE" MouseLeftButtonDown="OnResizeRight"/>
+            <Rectangle Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Top" Fill="Transparent" Cursor="SizeNWSE" MouseLeftButtonDown="OnResizeTopLeft"/>
+            <Rectangle Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Top" Fill="Transparent" Cursor="SizeNESW" MouseLeftButtonDown="OnResizeTopRight"/>
+            <Rectangle Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="Transparent" Cursor="SizeNESW" MouseLeftButtonDown="OnResizeBottomLeft"/>
+            <Rectangle Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="Transparent" Cursor="SizeNWSE" MouseLeftButtonDown="OnResizeBottomRight"/>
         </Grid>
     </Border>
 </Window>

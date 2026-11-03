@@ -54,6 +54,40 @@ public partial class MainViewModel : ViewModelBase
     private string _outboundLocationText = "";
     private bool _isCheckingIp = false;
 
+    private double _uiScale = 1.0;
+    private double _savedWindowWidth = 480;
+    private double _savedWindowHeight = 760;
+
+    public double UiScale
+    {
+        get => _uiScale;
+        set
+        {
+            double clamped = Math.Clamp(value, 0.75, 2.0);
+            if (SetProperty(ref _uiScale, clamped))
+            {
+                OnPropertyChanged(nameof(UiScalePercentText));
+                SaveState();
+            }
+        }
+    }
+
+    public string UiScalePercentText => $"{Math.Round(UiScale * 100)}%";
+
+    public double SavedWindowWidth
+    {
+        get => _savedWindowWidth;
+        set => SetProperty(ref _savedWindowWidth, value);
+    }
+
+    public double SavedWindowHeight
+    {
+        get => _savedWindowHeight;
+        set => SetProperty(ref _savedWindowHeight, value);
+    }
+
+    public Action? ResetDefaultSizeAction { get; set; }
+
     public string UploadSpeedText
     {
         get => _uploadSpeedText;
@@ -490,6 +524,12 @@ public partial class MainViewModel : ViewModelBase
     // Version Check Command
     public RelayCommand CheckUpdateCommand { get; }
 
+    // UI Zoom & Size Commands
+    public RelayCommand ZoomInCommand { get; }
+    public RelayCommand ZoomOutCommand { get; }
+    public RelayCommand ResetZoomCommand { get; }
+    public RelayCommand ResetDefaultSizeCommand { get; }
+
     public MainViewModel()
     {
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
@@ -568,6 +608,18 @@ public partial class MainViewModel : ViewModelBase
         if (savedData.Settings.TryGetValue("CustomDirectRules", out string? directRulesStr))
         {
             _customDirectRules = directRulesStr;
+        }
+        if (savedData.Settings.TryGetValue("UiScale", out string? scaleStr) && double.TryParse(scaleStr, out double savedScale))
+        {
+            _uiScale = Math.Clamp(savedScale, 0.75, 2.0);
+        }
+        if (savedData.Settings.TryGetValue("WindowWidth", out string? wStr) && double.TryParse(wStr, out double savedW))
+        {
+            _savedWindowWidth = savedW;
+        }
+        if (savedData.Settings.TryGetValue("WindowHeight", out string? hStr) && double.TryParse(hStr, out double savedH))
+        {
+            _savedWindowHeight = savedH;
         }
         _isAutoStartEnabled = SystemProxyManager.GetAutoStartStatus();
 
@@ -744,6 +796,15 @@ public partial class MainViewModel : ViewModelBase
         CancelSpeedTestCommand = new RelayCommand(CancelSpeedTest);
         RefreshIpInfoCommand = new RelayCommand(async () => await RefreshIpInfoAsync());
         CheckUpdateCommand = new RelayCommand(async () => await CheckForUpdateAsync(manual: true));
+        ZoomInCommand = new RelayCommand(() => UiScale += 0.1);
+        ZoomOutCommand = new RelayCommand(() => UiScale -= 0.1);
+        ResetZoomCommand = new RelayCommand(() => UiScale = 1.0);
+        ResetDefaultSizeCommand = new RelayCommand(() =>
+        {
+            UiScale = 1.0;
+            ResetDefaultSizeAction?.Invoke();
+            AppLogger.LogSystem("[系统设置] 已恢复默认窗口大小与 100% 缩放比例。");
+        });
 
         // 启动时初始化测速、IP 查询与自动检测新版本（不自动更新订阅，仅支持手动更新）
         _ = Task.Run(async () =>
@@ -777,7 +838,10 @@ public partial class MainViewModel : ViewModelBase
             ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString(),
             ["IsNotificationsEnabled"] = IsNotificationsEnabled.ToString(),
             ["CustomProxyRules"] = CustomProxyRules,
-            ["CustomDirectRules"] = CustomDirectRules
+            ["CustomDirectRules"] = CustomDirectRules,
+            ["UiScale"] = UiScale.ToString("F2"),
+            ["WindowWidth"] = SavedWindowWidth.ToString("F0"),
+            ["WindowHeight"] = SavedWindowHeight.ToString("F0")
         };
         _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
     }

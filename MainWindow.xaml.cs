@@ -118,6 +118,33 @@ public partial class MainWindow : Window
         ViewModel.RequestEditSubscriptionAction = ShowEditSubscriptionDialog;
         ViewModel.RequestDeleteSubscriptionAction = ShowDeleteSubscriptionConfirmation;
 
+        ViewModel.ResetDefaultSizeAction = () =>
+        {
+            Width = 440;
+            Height = 720;
+        };
+
+        if (ViewModel.SavedWindowWidth > 300 && ViewModel.SavedWindowHeight > 300)
+        {
+            Width = ViewModel.SavedWindowWidth;
+            Height = ViewModel.SavedWindowHeight;
+        }
+        else
+        {
+            Width = 440;
+            Height = 720;
+        }
+
+        SizeChanged += (s, args) =>
+        {
+            if (IsLoaded && WindowState == WindowState.Normal)
+            {
+                ViewModel.SavedWindowWidth = ActualWidth;
+                ViewModel.SavedWindowHeight = ActualHeight;
+                ViewModel.SaveState();
+            }
+        };
+
         ViewModel.PropertyChanged += (s, args) =>
         {
             if (args.PropertyName == nameof(ViewModel.SelectedTabIndex))
@@ -303,4 +330,54 @@ public partial class MainWindow : Window
             }
         }
     }
+
+    private void OnWindowPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            if (e.Delta > 0)
+            {
+                ViewModel.UiScale = Math.Min(2.0, ViewModel.UiScale + 0.05);
+            }
+            else if (e.Delta < 0)
+            {
+                ViewModel.UiScale = Math.Max(0.75, ViewModel.UiScale - 0.05);
+            }
+            e.Handled = true;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    private const int WM_SYSCOMMAND = 0x112;
+    private const int SC_SIZE = 0xF000;
+
+    public enum ResizeDirection
+    {
+        Left = 1,
+        Right = 2,
+        Top = 3,
+        TopLeft = 4,
+        TopRight = 5,
+        Bottom = 6,
+        BottomLeft = 7,
+        BottomRight = 8
+    }
+
+    private void ResizeWindow(ResizeDirection direction)
+    {
+        System.Windows.Input.Mouse.Capture(null);
+        IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        SendMessage(hwnd, WM_SYSCOMMAND, (IntPtr)(SC_SIZE + (int)direction), IntPtr.Zero);
+    }
+
+    private void OnResizeTop(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.Top);
+    private void OnResizeBottom(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.Bottom);
+    private void OnResizeLeft(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.Left);
+    private void OnResizeRight(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.Right);
+    private void OnResizeTopLeft(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.TopLeft);
+    private void OnResizeTopRight(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.TopRight);
+    private void OnResizeBottomLeft(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.BottomLeft);
+    private void OnResizeBottomRight(object sender, MouseButtonEventArgs e) => ResizeWindow(ResizeDirection.BottomRight);
 }

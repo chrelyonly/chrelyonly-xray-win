@@ -8,10 +8,6 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Services/XrayConfigBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/XrayConfigBuilder.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ViewModels/MainViewModel.ProxyControl.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ViewModels/MainViewModel.ProxyControl.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ViewModels/MainViewModel.Subscriptions.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ViewModels/MainViewModel.Subscriptions.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ViewModels/MainViewModel.TrafficAndSpeed.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ViewModels/MainViewModel.TrafficAndSpeed.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ViewModels/MainViewModel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ViewModels/MainViewModel.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/AlertWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/AlertWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/ConfirmWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/ConfirmWindow.xaml" afterDir="false" />
