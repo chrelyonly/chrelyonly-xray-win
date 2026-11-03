@@ -1375,44 +1375,45 @@
                     </UniformGrid>
                 </Border>
 
-                <!-- Bottom Fixed Version & Memory Info Bar -->
-                <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="12,5" Margin="4,4,4,4">
-                    <Grid VerticalAlignment="Center">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <!-- Bottom Fixed Version & Memory Info Bar (Wrapping Layout) -->
+                <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="10,6" Margin="2,2,2,2">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- 左侧：版本号 -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="ℹ️ 版本:" FontSize="11" FontWeight="Bold" Foreground="#374151" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="{Binding AppVersionText}" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <!-- Row 0: Version & Check Update Button -->
+                        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                <TextBlock Text="🔖 版本: " FontSize="11" FontWeight="Bold" Foreground="#6B7280"/>
+                                <TextBlock Text="{Binding AppVersionText}" FontSize="11" FontWeight="SemiBold" Foreground="#007AFF" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Command="{Binding CheckUpdateCommand}"
+                                    Background="#E8F1FC" Foreground="#007AFF" BorderBrush="#D0E3FF"
+                                    FontSize="10" FontWeight="Bold" Padding="6,2" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                    ToolTip="检查是否有最新版本">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                        <Setter Property="Content" Value="🔄 检查更新"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
+                                                <Setter Property="Content" Value="⏳ 检测中..."/>
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </DockPanel>
 
-                        <!-- 中间：检查更新按钮 -->
-                        <Button Grid.Column="1" Command="{Binding CheckUpdateCommand}"
-                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
-                                FontSize="10" FontWeight="Bold" Padding="8,2" Height="22" VerticalAlignment="Center" VerticalContentAlignment="Center" Margin="10,0"
-                                ToolTip="检查是否有最新版本">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                    <Setter Property="Content" Value="🔄 检查更新"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
-                                            <Setter Property="Content" Value="⏳ 检测中..."/>
-                                            <Setter Property="IsEnabled" Value="False"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-
-                        <!-- 右侧：内存使用 -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                            <TextBlock Text="⚡ 内存:" FontSize="11" FontWeight="Bold" Foreground="#374151" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="{Binding MemoryUsageText}" FontSize="11" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <!-- Row 1: Memory Usage -->
+                        <DockPanel Grid.Row="1">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                <TextBlock Text="💾 内存: " FontSize="11" FontWeight="Bold" Foreground="#6B7280"/>
+                                <TextBlock Text="{Binding MemoryUsageText}" FontSize="11" FontWeight="Bold" Foreground="#34C759"/>
+                            </StackPanel>
+                        </DockPanel>
                     </Grid>
                 </Border>
             </Grid>
