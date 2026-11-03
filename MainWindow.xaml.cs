@@ -263,68 +263,44 @@ public partial class MainWindow : Window
 
     private void ShowAddSubscriptionDialog()
     {
-        ViewModel.IsModalOpen = true;
-        try
+        var dlg = new EditSubscriptionWindow("添加订阅源", "", "") { Owner = this };
+        if (ViewModel.ShowModalDialog(dlg) == true)
         {
-            var dlg = new EditSubscriptionWindow("添加订阅源", "", "") { Owner = this };
-            if (dlg.ShowDialog() == true)
+            var newItem = new SubscriptionItem
             {
-                var newItem = new SubscriptionItem
-                {
-                    Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "新订阅源" : dlg.SubscriptionName,
-                    Url = dlg.SubscriptionUrl,
-                    NodeCount = 0
-                };
-                ViewModel.Subscriptions.Add(newItem);
-                ViewModel.SelectedSubscription = newItem;
+                Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "新订阅源" : dlg.SubscriptionName,
+                Url = dlg.SubscriptionUrl,
+                NodeCount = 0
+            };
+            ViewModel.Subscriptions.Add(newItem);
+            ViewModel.SelectedSubscription = newItem;
 
-                _ = ViewModel.UpdateSubscriptionItemAsync(newItem);
-            }
-        }
-        finally
-        {
-            ViewModel.IsModalOpen = false;
+            _ = ViewModel.UpdateSubscriptionItemAsync(newItem);
         }
     }
 
     private void ShowEditSubscriptionDialog(SubscriptionItem item)
     {
-        ViewModel.IsModalOpen = true;
-        try
+        var dlg = new EditSubscriptionWindow("编辑订阅源", item.Name, item.Url) { Owner = this };
+        if (ViewModel.ShowModalDialog(dlg) == true)
         {
-            var dlg = new EditSubscriptionWindow("编辑订阅源", item.Name, item.Url) { Owner = this };
-            if (dlg.ShowDialog() == true)
-            {
-                item.Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "订阅源" : dlg.SubscriptionName;
-                item.Url = dlg.SubscriptionUrl;
+            item.Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "订阅源" : dlg.SubscriptionName;
+            item.Url = dlg.SubscriptionUrl;
 
-                _ = ViewModel.UpdateSubscriptionItemAsync(item);
-            }
-        }
-        finally
-        {
-            ViewModel.IsModalOpen = false;
+            _ = ViewModel.UpdateSubscriptionItemAsync(item);
         }
     }
 
     private void ShowDeleteSubscriptionConfirmation(SubscriptionItem item)
     {
-        ViewModel.IsModalOpen = true;
-        try
+        var confirmDlg = new ConfirmWindow("确认删除订阅", $"确定要删除订阅源“{item.Name}”吗？此操作无法撤销。") { Owner = this };
+        if (ViewModel.ShowModalDialog(confirmDlg) == true)
         {
-            var confirmDlg = new ConfirmWindow("确认删除订阅", $"确定要删除订阅源“{item.Name}”吗？此操作无法撤销。") { Owner = this };
-            if (confirmDlg.ShowDialog() == true)
+            ViewModel.Subscriptions.Remove(item);
+            if (ViewModel.SelectedSubscription == item)
             {
-                ViewModel.Subscriptions.Remove(item);
-                if (ViewModel.SelectedSubscription == item)
-                {
-                    ViewModel.SelectedSubscription = ViewModel.Subscriptions.FirstOrDefault();
-                }
+                ViewModel.SelectedSubscription = ViewModel.Subscriptions.FirstOrDefault();
             }
-        }
-        finally
-        {
-            ViewModel.IsModalOpen = false;
         }
     }
 }

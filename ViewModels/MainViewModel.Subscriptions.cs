@@ -53,7 +53,7 @@ public partial class MainViewModel
 
             if (showAlert)
             {
-                new Views.AlertWindow("订阅更新", $"更新订阅成功！当前订阅包含 {fetchedNodes.Count} 个可用节点。", true).ShowDialog();
+                ShowModalDialog(new Views.AlertWindow("订阅更新", $"更新订阅成功！当前订阅包含 {fetchedNodes.Count} 个可用节点。", true));
             }
         }
         catch (Exception ex)
@@ -61,7 +61,7 @@ public partial class MainViewModel
             AppLogger.LogSystem($"[订阅逻辑] 更新订阅发生异常: {ex.Message}");
             if (showAlert)
             {
-                new Views.AlertWindow("订阅更新失败", $"更新订阅失败，请检查网络或订阅地址是否正确。\n错误信息: {ex.Message}", false).ShowDialog();
+                ShowModalDialog(new Views.AlertWindow("订阅更新失败", $"更新订阅失败，请检查网络或订阅地址是否正确。\n错误信息: {ex.Message}", false));
             }
         }
         finally

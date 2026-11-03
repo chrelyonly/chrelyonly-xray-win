@@ -16,7 +16,7 @@
         FontFamily="YouYuan, Microsoft YaHei UI, Segoe UI, sans-serif">
 
     <Border Background="#FFFFFF"
-            BorderBrush="#E5E7EB"
+            BorderBrush="#CBD5E1"
             BorderThickness="1"
             CornerRadius="16"
             Padding="24">
@@ -24,7 +24,7 @@
             <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
         </Border.LayoutTransform>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.15" Color="#000000"/>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="6" Opacity="0.22" Color="#000000"/>
         </Border.Effect>
 
         <Grid>

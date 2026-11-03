@@ -122,7 +122,7 @@ public partial class MainViewModel
         if (SelectedServer == null)
         {
             AppLogger.LogSystem("[节点测速] 提示：当前未选中任何节点。");
-            new Views.AlertWindow("测速提示", "请先在节点列表中选择一个需要测速的节点。", false).ShowDialog();
+            ShowModalDialog(new Views.AlertWindow("测速提示", "请先在节点列表中选择一个需要测速的节点。", false));
             return;
         }
 

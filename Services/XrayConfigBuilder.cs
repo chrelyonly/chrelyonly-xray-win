@@ -234,15 +234,17 @@ public static class XrayConfigBuilder
         string transport = node.Transport;
         string security = node.Security;
 
+        var streamSettings = new JsonObject
+        {
+            ["network"] = transport,
+            ["security"] = security,
+        };
+
         var proxyOutbound = new JsonObject
         {
             ["tag"] = "proxy",
             ["protocol"] = node.Protocol,
-            ["streamSettings"] = new JsonObject
-            {
-                ["network"] = transport,
-                ["security"] = security,
-            }
+            ["streamSettings"] = streamSettings
         };
 
         if (node.Protocol.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
@@ -285,7 +287,7 @@ public static class XrayConfigBuilder
             string serverName = !string.IsNullOrWhiteSpace(node.Host) ? node.Host : (!string.IsNullOrWhiteSpace(node.Sni) ? node.Sni : node.Address);
             if (node.Protocol.Equals("vless", StringComparison.OrdinalIgnoreCase))
             {
-                proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
+                streamSettings["tlsSettings"] = new JsonObject()
                 {
                     ["serverName"] = serverName,
                     ["alpn"] = new JsonArray()
@@ -301,7 +303,7 @@ public static class XrayConfigBuilder
             }
             if (node.Protocol.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
             {
-                proxyOutbound["streamSettings"]["tlsSettings"] = new JsonObject()
+                streamSettings["tlsSettings"] = new JsonObject()
                 {
                     ["serverName"] = serverName,
                     ["fingerprint"] = "chrome",
@@ -311,7 +313,7 @@ public static class XrayConfigBuilder
 
         if (security.Equals("reality", StringComparison.OrdinalIgnoreCase))
         {
-            proxyOutbound["streamSettings"]["realitySettings"] = new JsonObject()
+            streamSettings["realitySettings"] = new JsonObject()
             {
                 ["serverName"] = node.Sni,
                 ["fingerprint"] = "chrome",
@@ -325,7 +327,7 @@ public static class XrayConfigBuilder
 
         if (transport.Equals("ws", StringComparison.OrdinalIgnoreCase))
         {
-            proxyOutbound["streamSettings"]["wsSettings"] = new JsonObject()
+            streamSettings["wsSettings"] = new JsonObject()
             {
                 ["path"] = node.Path,
                 ["host"] = node.Host,
@@ -338,7 +340,7 @@ public static class XrayConfigBuilder
 
         if (transport.Equals("xhttp", StringComparison.OrdinalIgnoreCase))
         {
-            proxyOutbound["streamSettings"]["xhttpSettings"] = new JsonObject()
+            streamSettings["xhttpSettings"] = new JsonObject()
             {
                 ["path"] = node.Path,
                 ["host"] = node.Host,
@@ -353,12 +355,12 @@ public static class XrayConfigBuilder
 
         if (transport.Equals("hysteria", StringComparison.OrdinalIgnoreCase))
         {
-            proxyOutbound["streamSettings"]["hysteriaSettings"] = new JsonObject()
+            streamSettings["hysteriaSettings"] = new JsonObject()
             {
                 ["version"] = 2,
                 ["auth"] = node.Uuid,
             };
-            proxyOutbound["streamSettings"]["finalmask"] = new JsonObject()
+            streamSettings["finalmask"] = new JsonObject()
             {
                 ["udp"] = new JsonArray()
                 {

@@ -46,7 +46,7 @@
                             <DataTrigger Binding="{Binding IsModalOpen}" Value="True">
                                 <Setter Property="Effect">
                                     <Setter.Value>
-                                        <BlurEffect Radius="14" KernelType="Gaussian"/>
+                                        <BlurEffect Radius="18" KernelType="Gaussian"/>
                                     </Setter.Value>
                                 </Setter>
                             </DataTrigger>
@@ -58,6 +58,7 @@
                     <RowDefinition Height="Auto"/> <!-- TitleBar -->
                     <RowDefinition Height="*"/>    <!-- Main Tab Content Pages -->
                     <RowDefinition Height="Auto"/> <!-- Bottom Tab Navigation Bar -->
+                    <RowDefinition Height="Auto"/> <!-- Bottom Version & Memory Status Bar -->
                 </Grid.RowDefinitions>
 
                 <!-- Custom Window Title Bar -->
@@ -256,7 +257,7 @@
                             </Border>
 
                             <!-- Selected Server Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,16">
+                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -289,26 +290,6 @@
                                             </StackPanel>
                                         </Border>
                                     </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- Version & Memory Info Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,0">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="ℹ️ 版本:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding AppVersionText}" FontSize="12" FontWeight="SemiBold" Foreground="#2563EB"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <TextBlock Text="⚡ 内存:" FontSize="12" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding MemoryUsageText}" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
-                                    </StackPanel>
                                 </Grid>
                             </Border>
 
@@ -1093,7 +1074,7 @@
                                     <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
 
                                     <!-- 开机自启动 -->
-                                    <DockPanel>
+                                    <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
                                             <TextBlock Text="开机自动启动" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
                                             <TextBlock Text="登录 Windows 系统时自动后台运行" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
@@ -1101,6 +1082,33 @@
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
                                                       IsChecked="{Binding IsAutoStartEnabled}"
                                                       DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 软件在线更新 -->
+                                    <DockPanel>
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="软件在线更新" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="检测是否有最新版本发布的升级提示" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding CheckUpdateCommand}"
+                                                Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                                FontSize="11" FontWeight="Bold" Padding="10,5"
+                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                ToolTip="检查是否有最新版本">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                    <Setter Property="Content" Value="🔄 检查更新"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
+                                                            <Setter Property="Content" Value="⏳ 检测中..."/>
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </DockPanel>
                                 </StackPanel>
                             </Border>
@@ -1330,6 +1338,42 @@
                             </Button.Template>
                         </Button>
                     </UniformGrid>
+                </Border>
+
+                <!-- Bottom Fixed Version & Memory Info Bar -->
+                <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="12,5" Margin="4,4,4,4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="ℹ️ 版本:" FontSize="11" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding AppVersionText}" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <Button Command="{Binding CheckUpdateCommand}"
+                                    Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
+                                    FontSize="10" FontWeight="Bold" Padding="8,3" Margin="0,0,12,0"
+                                    ToolTip="检查是否有最新版本">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                        <Setter Property="Content" Value="🔄 检查更新"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCheckingUpdate}" Value="True">
+                                                <Setter Property="Content" Value="⏳ 检测中..."/>
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock Text="⚡ 内存:" FontSize="11" FontWeight="Bold" Foreground="#374151" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding MemoryUsageText}" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
 

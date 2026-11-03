@@ -361,7 +361,7 @@ public partial class MainViewModel : ViewModelBase
                     AppLogger.LogSystem($"[系统代理冲突] 检测到当前系统代理已被第三方程序占用: {proxyServer}");
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        new Views.AlertWindow("代理冲突提示", $"检测到当前 Windows 系统代理已被其他程序占用 ({proxyServer})。", true).ShowDialog();
+                        ShowModalDialog(new Views.AlertWindow("代理冲突提示", $"检测到当前 Windows 系统代理已被其他程序占用 ({proxyServer})。", true));
                     });
                 }
             }
@@ -487,6 +487,9 @@ public partial class MainViewModel : ViewModelBase
     public RelayCommand SaveRulesCommand { get; }
     public RelayCommand ResetRulesCommand { get; }
 
+    // Version Check Command
+    public RelayCommand CheckUpdateCommand { get; }
+
     public MainViewModel()
     {
         AppLogger.LogSystem("[主控逻辑] 应用程序正在初始化 ViewModel...");
@@ -603,7 +606,7 @@ public partial class MainViewModel : ViewModelBase
             SaveState();
             ReapplyXrayConfigIfConnected();
             AppLogger.LogSystem("[分流规则] 域名与 IP 分流黑白名单规则已保存并应用成功！");
-            new Views.AlertWindow("规则已保存", "自定义分流规则已保存成功，并已即时生效！", true).ShowDialog();
+            ShowModalDialog(new Views.AlertWindow("规则已保存", "自定义分流规则已保存成功，并已即时生效！", true));
         });
 
         ResetRulesCommand = new RelayCommand(obj =>
@@ -615,7 +618,7 @@ public partial class MainViewModel : ViewModelBase
             SaveState();
             ReapplyXrayConfigIfConnected();
             AppLogger.LogSystem("[分流规则] 已清空并重置自定义分流规则。");
-            new Views.AlertWindow("规则重置", "已成功重置所有自定义分流规则。", true).ShowDialog();
+            ShowModalDialog(new Views.AlertWindow("规则重置", "已成功重置所有自定义分流规则。", true));
         });
 
         ToggleConnectionCommand = new RelayCommand(ToggleConnection);
@@ -740,8 +743,9 @@ public partial class MainViewModel : ViewModelBase
         StartSpeedTestCommand = new RelayCommand(async () => await StartSpeedTestAsync());
         CancelSpeedTestCommand = new RelayCommand(CancelSpeedTest);
         RefreshIpInfoCommand = new RelayCommand(async () => await RefreshIpInfoAsync());
+        CheckUpdateCommand = new RelayCommand(async () => await CheckForUpdateAsync(manual: true));
 
-        // 启动时初始化测速与 IP 查询（不自动更新订阅，仅支持手动更新）
+        // 启动时初始化测速、IP 查询与自动检测新版本（不自动更新订阅，仅支持手动更新）
         _ = Task.Run(async () =>
         {
             await Task.Delay(1500); // 延迟 1.5 秒等待主窗口完全初始化
@@ -756,6 +760,10 @@ public partial class MainViewModel : ViewModelBase
                     await TestAllAiUnlockAsync();
                 }
             });
+
+            // 自动检测应用新版本
+            await Task.Delay(1000);
+            await CheckForUpdateAsync(manual: false);
         });
     }
 
@@ -778,5 +786,25 @@ public partial class MainViewModel : ViewModelBase
     {
         SystemProxyManager.SetSystemProxy(false);
         _xrayManager.StopCore();
+    }
+
+    public bool? ShowModalDialog(System.Windows.Window win)
+    {
+        return System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            IsModalOpen = true;
+            try
+            {
+                if (win.Owner == null && System.Windows.Application.Current.MainWindow != null && System.Windows.Application.Current.MainWindow != win)
+                {
+                    win.Owner = System.Windows.Application.Current.MainWindow;
+                }
+                return win.ShowDialog();
+            }
+            finally
+            {
+                IsModalOpen = false;
+            }
+        });
     }
 }

@@ -41,7 +41,7 @@ public partial class MainViewModel
             if (SelectedServer == null)
             {
                 AppLogger.LogSystem("[主控逻辑] 提示：当前未选中任何节点。");
-                new Views.AlertWindow("提示", "请先在节点列表中选择一个服务器节点。", false).ShowDialog();
+                ShowModalDialog(new Views.AlertWindow("提示", "请先在节点列表中选择一个服务器节点。", false));
                 SelectedTabIndex = 2; // Switch to nodes tab
                 return;
             }
@@ -70,7 +70,7 @@ public partial class MainViewModel
                         if (!success)
                         {
                             AppLogger.LogSystem("[主控逻辑] 错误：Xray 核心启动失败。");
-                            new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xraylib.exe 是否存在。", false).ShowDialog();
+                            ShowModalDialog(new Views.AlertWindow("启动失败", "未能成功启动 Xray 核心，请检查 Core/xraylib.exe 是否存在。", false));
                             IsConnected = false;
                             IsSystemProxyEnabled = false;
                             srv.IsConnected = false;
