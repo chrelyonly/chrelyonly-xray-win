@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.Services;
 
@@ -62,6 +63,8 @@ public partial class MainViewModel : ViewModelBase
     private double _uiScale = 1.0;
     private double _savedWindowWidth = 480;
     private double _savedWindowHeight = 760;
+    private double _cardOpacity = 0.85;
+    private SolidColorBrush _cardBackgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(217, 255, 255, 255));
 
     public double UiScale
     {
@@ -78,6 +81,26 @@ public partial class MainViewModel : ViewModelBase
     }
 
     public string UiScalePercentText => $"{Math.Round(UiScale * 100)}%";
+
+    public double CardOpacity
+    {
+        get => _cardOpacity;
+        set
+        {
+            double clamped = Math.Clamp(value, 0.3, 1.0);
+            if (SetProperty(ref _cardOpacity, clamped))
+            {
+                OnPropertyChanged(nameof(CardOpacityPercentText));
+                _cardBackgroundBrush.Color = System.Windows.Media.Color.FromArgb((byte)(clamped * 255), 255, 255, 255);
+                OnPropertyChanged(nameof(CardBackgroundBrush));
+                SaveState();
+            }
+        }
+    }
+
+    public string CardOpacityPercentText => $"{Math.Round(CardOpacity * 100)}%";
+
+    public SolidColorBrush CardBackgroundBrush => _cardBackgroundBrush;
 
     public double SavedWindowWidth
     {
@@ -690,6 +713,11 @@ public partial class MainViewModel : ViewModelBase
         {
             _uiScale = Math.Clamp(savedScale, 0.75, 2.0);
         }
+        if (savedData.Settings.TryGetValue("CardOpacity", out string? cardOpStr) && double.TryParse(cardOpStr, out double savedCardOp))
+        {
+            _cardOpacity = Math.Clamp(savedCardOp, 0.3, 1.0);
+            _cardBackgroundBrush.Color = System.Windows.Media.Color.FromArgb((byte)(_cardOpacity * 255), 255, 255, 255);
+        }
         if (savedData.Settings.TryGetValue("WindowWidth", out string? wStr) && double.TryParse(wStr, out double savedW))
         {
             _savedWindowWidth = savedW;
@@ -1002,6 +1030,7 @@ public partial class MainViewModel : ViewModelBase
             ["CustomProxyRules"] = CustomProxyRules,
             ["CustomDirectRules"] = CustomDirectRules,
             ["UiScale"] = UiScale.ToString("F2"),
+            ["CardOpacity"] = CardOpacity.ToString("F2"),
             ["WindowWidth"] = SavedWindowWidth.ToString("F0"),
             ["WindowHeight"] = SavedWindowHeight.ToString("F0")
         };

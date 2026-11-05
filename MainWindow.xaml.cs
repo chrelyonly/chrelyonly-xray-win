@@ -18,6 +18,12 @@ public partial class MainWindow : Window
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
     public bool _isActuallyExiting = false;
 
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_ROUND = 2;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -114,6 +120,17 @@ public partial class MainWindow : Window
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var helper = new System.Windows.Interop.WindowInteropHelper(this);
+            int preference = DWMWCP_ROUND;
+            DwmSetWindowAttribute(helper.Handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
+        }
+        catch
+        {
+            // Fallback for older Windows versions
+        }
+
         ViewModel.RequestAddSubscriptionAction = ShowAddSubscriptionDialog;
         ViewModel.RequestEditSubscriptionAction = ShowEditSubscriptionDialog;
         ViewModel.RequestDeleteSubscriptionAction = ShowDeleteSubscriptionConfirmation;

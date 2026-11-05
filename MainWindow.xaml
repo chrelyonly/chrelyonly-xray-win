@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:chrelyonly_xray_win"
         xmlns:vm="clr-namespace:chrelyonly_xray_win.ViewModels"
         mc:Ignorable="d"
+        x:Name="RootWindow"
         Title="莓莓修仙版" Height="720" Width="440"
         MinWidth="380" MinHeight="540"
         WindowStyle="None"
@@ -27,21 +28,25 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
     </Window.Resources>
 
-    <!-- Outer Window Border with Rounded Corners & Shadow (Dynamic Scaling) -->
-    <Border Background="{StaticResource WindowBackgroundBrush}"
-            CornerRadius="10"
-            BorderBrush="#000000"
+    <!-- Outer Window Container (Clean Rounded Window without artifact shadow) -->
+    <Border Background="Transparent"
             BorderThickness="0">
         <Border.LayoutTransform>
             <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}"/>
         </Border.LayoutTransform>
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.15" Color="#000000"/>
-        </Border.Effect>
 
-        <Grid Margin="2">
-            <!-- Background Content Grid with Gaussian Blur Effect when Modal is Open -->
-            <Grid x:Name="MainContentGrid">
+        <!-- Inner Clipped Rounded Window Container with iOS Frosted Background & Perfect Corner Clipping -->
+        <Border CornerRadius="22"
+                Background="#F2F2F7"
+                BorderBrush="#20000000"
+                BorderThickness="1"
+                ClipToBounds="True">
+            <Grid>
+                <!-- Global Background Wallpaper (Assets/bg.png) with Soft Opacity -->
+                <!-- <Image Source="/Assets/bg.png" Stretch="UniformToFill" Opacity="0.75" HorizontalAlignment="Center" VerticalAlignment="Center"/> -->
+
+                <!-- Background Content Grid with Gaussian Blur Effect when Modal is Open -->
+                <Grid x:Name="MainContentGrid" Margin="10">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Style.Triggers>
@@ -108,7 +113,7 @@
                         <StackPanel>
 
                             <!-- Xray Core & System Proxy Status Indicator Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,12" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -143,7 +148,7 @@
                             </Border>
 
                             <!-- Network & Routing Status Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,12" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -168,7 +173,7 @@
                                     <!-- Current Routing Mode Overview & Settings Quick Switch Link -->
                                     <DockPanel Grid.Row="2">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="当前路由分流" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="当前路由分流" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
 
@@ -184,7 +189,7 @@
                             </Border>
 
                             <!-- Header Status Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
                                 <StackPanel HorizontalAlignment="Center">
 
                                     <!-- One-Click Connection Power Button with Breathing Pulse & Scale Animations -->
@@ -253,13 +258,13 @@
                                         </Button.Template>
                                     </Button>
 
-                                    <TextBlock Text="{Binding ConnectStatusTitle}" FontSize="18" FontWeight="Bold" Foreground="#111827" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ConnectStatusTitle}" FontSize="18" FontWeight="Bold" Foreground="#1C1C1E" HorizontalAlignment="Center"/>
                                     <TextBlock Text="{Binding ConnectStatusSubtitle}" FontSize="12" Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
                             <!-- Selected Server Card -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,0">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16" Margin="0,0,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -273,7 +278,7 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Text="当前选中的节点" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding SelectedServer.Name}" FontSize="16" FontWeight="Bold" Foreground="#111827"
+                                        <TextBlock Grid.Row="1" Text="{Binding SelectedServer.Name}" FontSize="16" FontWeight="Bold" Foreground="#1C1C1E"
                                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                         <DockPanel Grid.Row="2" Margin="0,4,0,0">
                                             <TextBlock Text="{Binding SelectedServer.Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981" DockPanel.Dock="Right" Margin="8,0,0,0"/>
@@ -306,7 +311,7 @@
                         <StackPanel>
 
                             <!-- IP Prompt Card (本地IP与代理出口IP提示) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,14" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -316,7 +321,7 @@
                                     </Grid.RowDefinitions>
 
                                     <DockPanel Grid.Row="0" Margin="0,0,0,10">
-                                        <TextBlock Text="🌐 IP 与网络路由提示" FontSize="13" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                        <TextBlock Text="🌐 IP 与网络路由提示" FontSize="13" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center"/>
                                         <Button Command="{Binding RefreshIpInfoCommand}"
                                                 Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
                                                 FontSize="11" FontWeight="SemiBold" Padding="8,4"
@@ -357,7 +362,7 @@
                             </Border>
 
                             <!-- Traffic Statistics Card (流量统计与累计上下传) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,14" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -366,7 +371,7 @@
                                     </Grid.RowDefinitions>
 
                                     <DockPanel Grid.Row="0" Margin="0,0,0,10">
-                                        <TextBlock Text="📊 流量统计与实时网速" FontSize="13" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                        <TextBlock Text="📊 流量统计与实时网速" FontSize="13" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center"/>
                                         <Button Command="{Binding ResetTrafficCommand}"
                                                 Background="#FEF2F2" Foreground="#DC2626" BorderBrush="#FECACA"
                                                 FontSize="11" FontWeight="SemiBold" Padding="8,4"
@@ -413,7 +418,7 @@
                             </Border>
 
                             <!-- Node Speed Test Card (节点 CacheFly 50MB 真实下载测速) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,14" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -423,7 +428,7 @@
 
                                     <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical">
-                                            <TextBlock Text="⚡ 节点真实下载测速(自动读取系统代理)" FontSize="13" FontWeight="Bold" Foreground="#111827"/>
+                                            <TextBlock Text="⚡ 节点真实下载测速(自动读取系统代理)" FontSize="13" FontWeight="Bold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="https://cachefly.cachefly.net/50mb.test" FontSize="10" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
 
@@ -483,10 +488,10 @@
                             </Border>
 
                             <!-- AI Unlock Status Card (AI 访问解锁检测) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,0">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16" Margin="0,0,0,0">
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,12">
-                                        <TextBlock Text="访问curl检测(自动读取系统代理)" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                        <TextBlock Text="访问curl检测(自动读取系统代理)" FontSize="14" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center" DockPanel.Dock="Left"/>
                                         <Button Command="{Binding TestAllAiUnlockCommand}"
                                                 Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE"
                                                 FontSize="11" Padding="8,3" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -531,7 +536,7 @@
 
                                                         <!-- Top Row: Name and Top-Right Status Badge with Rotating Spinner Animation -->
                                                         <DockPanel Grid.Row="0">
-                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center" DockPanel.Dock="Left"/>
 
                                                             <Border DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                     Background="{Binding StatusBadgeBackground}" CornerRadius="8" Padding="5,2">
@@ -601,7 +606,7 @@
                         </Grid.RowDefinitions>
 
                         <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                            <TextBlock Text="服务器节点" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                            <TextBlock Text="服务器节点" FontSize="22" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center" DockPanel.Dock="Left"/>
 
                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
                                 <Button Command="{Binding SortNodesByLatencyCommand}"
@@ -650,10 +655,10 @@
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ListBoxItem">
                                                 <Border x:Name="itemBorder"
-                                                        Background="#FFFFFF"
-                                                        BorderBrush="#E5E7EB"
+                                                        Background="{Binding DataContext.CardBackgroundBrush, ElementName=RootWindow}"
+                                                        BorderBrush="#E5E5EA"
                                                         BorderThickness="1"
-                                                        CornerRadius="10"
+                                                        CornerRadius="16"
                                                         Padding="14,12">
                                                     <ContentPresenter/>
                                                 </Border>
@@ -690,7 +695,7 @@
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="#111827"
+                                            <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="#1C1C1E"
                                                        TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                             <DockPanel Grid.Row="1" Margin="0,4,0,0">
                                                 <TextBlock Text="{Binding Protocol}" FontSize="12" FontWeight="Bold" Foreground="#10B981" DockPanel.Dock="Right" Margin="8,0,0,0"/>
@@ -761,7 +766,7 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="订阅管理" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                            <TextBlock Text="订阅管理" FontSize="22" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
                                 <TextBlock Text="使用代理更新节点" FontSize="12" Foreground="#4B5563" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -803,7 +808,12 @@
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ListBoxItem">
-                                                <Border x:Name="border" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12" Padding="16">
+                                                <Border x:Name="border"
+                                                        Background="{Binding DataContext.CardBackgroundBrush, ElementName=RootWindow}"
+                                                        BorderBrush="#E5E5EA"
+                                                        BorderThickness="1"
+                                                        CornerRadius="16"
+                                                        Padding="16">
                                                     <ContentPresenter/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
@@ -831,7 +841,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center"/>
                                                 <Border Background="{Binding TypeTagBackground}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding TypeTagDisplay}" FontSize="11" FontWeight="Bold" Foreground="{Binding TypeTagForeground}"/>
                                                 </Border>
@@ -976,7 +986,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="运行日志" FontSize="20" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                            <TextBlock Text="运行日志" FontSize="22" FontWeight="Bold" Foreground="#1C1C1E" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Content="{Binding LoggingStatusText}" Command="{Binding ToggleLoggingCommand}"
@@ -1086,17 +1096,17 @@
                         <StackPanel Margin="0,0,0,16">
 
                             <!-- Header Title -->
-                            <TextBlock Text="系统与分流设置" FontSize="20" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,12"/>
+                            <TextBlock Text="系统与分流设置" FontSize="22" FontWeight="Bold" Foreground="#1C1C1E" Margin="0,0,0,12"/>
 
                             <!-- Card 1: 客户端基础功能 -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,12" Margin="0,0,0,16">
                                 <StackPanel>
-                                    <TextBlock Text="⚙️ 客户端基础设置" FontSize="13" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,10"/>
+                                    <TextBlock Text="⚙️ 客户端基础设置" FontSize="13" FontWeight="Bold" Foreground="#1C1C1E" Margin="0,0,0,10"/>
 
                                     <!-- 允许局域网连接 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="允许局域网连接 (Allow LAN)" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="允许局域网连接 (Allow LAN)" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="{Binding AllowLanStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
@@ -1110,7 +1120,7 @@
                                     <!-- 全局代理模式 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="全局代理模式" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="全局代理模式" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="{Binding RoutingModeStatusText}" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
@@ -1124,7 +1134,7 @@
                                     <!-- 代理更新订阅 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="通过代理更新订阅" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="通过代理更新订阅" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="拉取订阅节点时通过当前已连接节点连接" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
@@ -1137,7 +1147,7 @@
                                     <!-- 节点自动选择检测间隔 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="节点自动选择检测间隔" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="节点自动选择检测间隔" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="选择【⚡ 自动选择】" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ComboBox Width="110" Padding="6,4" FontSize="12"
@@ -1157,7 +1167,7 @@
                                     <!-- Windows 消息通知 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="Windows 消息通知" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="Windows 消息通知" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="允许显示系统托盘气泡提示消息" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
@@ -1170,7 +1180,7 @@
                                     <!-- 开机自启动 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="开机自动启动" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="开机自动启动" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="登录 Windows 系统时自动后台运行" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
@@ -1183,7 +1193,7 @@
                                     <!-- 界面显示缩放比例 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="界面显示缩放比例" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="界面显示缩放比例" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="支持 Ctrl + 鼠标滑轮实时缩放界面" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -1196,10 +1206,24 @@
 
                                     <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
 
+                                    <!-- 卡片毛玻璃透明度调节 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="卡片毛玻璃透明度" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
+                                            <TextBlock Text="实时调节所有内容卡片的背景透明度" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Slider Value="{Binding CardOpacity, Mode=TwoWay}" Minimum="0.3" Maximum="1.0" TickFrequency="0.05" IsSnapToTickEnabled="True" Width="100" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding CardOpacityPercentText}" FontSize="12" FontWeight="Bold" Foreground="#007AFF" VerticalAlignment="Center" Margin="8,0,0,0" Width="36" TextAlignment="Right"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
                                     <!-- 重置窗口与显示比例 -->
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="重置窗口尺寸与缩放" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="重置窗口尺寸与缩放" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="一键恢复默认窗口尺寸 (480x760) 与 100% 缩放" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <Button Command="{Binding ResetDefaultSizeCommand}"
@@ -1216,7 +1240,7 @@
                                     <!-- 软件在线更新 -->
                                     <DockPanel>
                                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
-                                            <TextBlock Text="软件在线更新" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="软件在线更新" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="检测是否有最新版本发布的升级提示" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <Button Command="{Binding CheckUpdateCommand}"
@@ -1241,11 +1265,11 @@
                             </Border>
 
                             <!-- Card 2: 域名与 IP 分流规则 (黑白名单) -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,14" Margin="0,0,0,16">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,14" Margin="0,0,0,16">
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,10">
                                         <StackPanel Orientation="Vertical">
-                                            <TextBlock Text="🌐 域名与 IP 自定义分流规则" FontSize="13" FontWeight="Bold" Foreground="#111827"/>
+                                            <TextBlock Text="🌐 域名与 IP 自定义分流规则" FontSize="13" FontWeight="Bold" Foreground="#1C1C1E"/>
                                             <TextBlock Text="支持多行域名(如 example.com)、IP/CIDR(如 1.1.1.1 或 10.0.0.0/8) 或 geosite/geoip" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                         </StackPanel>
                                     </DockPanel>
@@ -1303,14 +1327,14 @@
                             </Border>
 
                             <!-- Card 3: 监听端口信息 -->
-                            <Border Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="14" Padding="16,12" Margin="0,0,0,0">
+                            <Border Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="16" Padding="16,12" Margin="0,0,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="🔌 本地复合代理端口" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                        <TextBlock Text="🔌 本地复合代理端口" FontSize="12" FontWeight="SemiBold" Foreground="#1C1C1E"/>
                                         <TextBlock Text="支持 SOCKS5 与 HTTP 复合代理协议" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <Border Grid.Column="1" Background="#F3F4F6" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
@@ -1462,7 +1486,7 @@
                 </Border>
 
                 <!-- Bottom Fixed Version & Memory Info Bar (Wrapping Layout) -->
-                <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="10,6" Margin="2,2,2,2">
+                <Border Grid.Row="3" Background="{Binding CardBackgroundBrush}" BorderBrush="#E5E5EA" BorderThickness="1" CornerRadius="12" Padding="10,6" Margin="2,2,2,2">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -1521,4 +1545,5 @@
             <Rectangle Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="Transparent" Cursor="SizeNWSE" MouseLeftButtonDown="OnResizeBottomRight"/>
         </Grid>
     </Border>
+</Border>
 </Window>

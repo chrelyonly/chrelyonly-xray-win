@@ -5,7 +5,7 @@
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F2F2F7" />
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="CardBorderBrush" Color="#E5E5EA" />
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#000000" />
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1C1C1E" />
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#8E8E93" />
     <SolidColorBrush x:Key="SubtleBorderBrush" Color="#C7C7CC" />
     <SolidColorBrush x:Key="ItemSelectedBackgroundBrush" Color="#E5E5EA" />
