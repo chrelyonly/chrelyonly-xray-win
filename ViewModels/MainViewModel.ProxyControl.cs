@@ -5,10 +5,31 @@ namespace chrelyonly_xray_win.ViewModels;
 
 public partial class MainViewModel
 {
+    public ServerNode? GetEffectiveServerForAutoSelect()
+    {
+        if (_activeAutoSelectedServer != null && Servers.Contains(_activeAutoSelectedServer))
+        {
+            return _activeAutoSelectedServer;
+        }
+
+        var candidate = Servers
+            .Where(n => !n.IsAutoSelectNode)
+            .OrderBy(n => (n.LatencyMs > 0 && n.LatencyMs < 9999) ? n.LatencyMs : 99999)
+            .FirstOrDefault();
+
+        _activeAutoSelectedServer = candidate;
+        return candidate;
+    }
+
     public string GenerateCurrentConfig(ServerNode? node = null)
     {
         var srv = node ?? SelectedServer;
         if (srv == null) return "";
+        if (srv.IsAutoSelectNode)
+        {
+            srv = GetEffectiveServerForAutoSelect();
+            if (srv == null) return "";
+        }
         return _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
     }
 

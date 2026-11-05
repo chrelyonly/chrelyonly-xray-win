@@ -832,18 +832,8 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
-                                                <Border Background="#DBEAFE" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsFixed}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                    <TextBlock Text="🔒 内置固定" FontSize="11" FontWeight="Bold" Foreground="#1E40AF"/>
+                                                <Border Background="{Binding TypeTagBackground}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding TypeTagDisplay}" FontSize="11" FontWeight="Bold" Foreground="{Binding TypeTagForeground}"/>
                                                 </Border>
                                             </StackPanel>
                                             <Border Grid.Column="1" Background="#DCFCE7" CornerRadius="6" Padding="8,3">
@@ -1140,6 +1130,26 @@
                                         <ToggleButton Style="{StaticResource ToggleSwitchStyle}"
                                                       IsChecked="{Binding IsUseProxyForSubUpdate}"
                                                       DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>
+
+                                    <!-- 节点自动选择检测间隔 -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" DockPanel.Dock="Left">
+                                            <TextBlock Text="节点自动选择检测间隔" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                                            <TextBlock Text="选择【⚡ 自动选择】" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ComboBox Width="110" Padding="6,4" FontSize="12"
+                                                  SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding AutoSelectIntervalText}"
+                                                  DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <ComboBoxItem Content="15 秒" Tag="15"/>
+                                            <ComboBoxItem Content="30 秒" Tag="30"/>
+                                            <ComboBoxItem Content="60 秒" Tag="60"/>
+                                            <ComboBoxItem Content="2 分钟" Tag="120"/>
+                                            <ComboBoxItem Content="5 分钟" Tag="300"/>
+                                        </ComboBox>
                                     </DockPanel>
 
                                     <Border Height="1" Background="#F3F4F6" Margin="0,0,0,10"/>

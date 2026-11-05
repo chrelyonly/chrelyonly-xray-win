@@ -7,7 +7,7 @@ namespace chrelyonly_xray_win.Services;
 public static class UpdateCheckService
 {
     public const string VersionCheckUrl = "https://www.chrelyonly.cn/version/chrelyonly-xray-version.json";
-    public const long CurrentVersionCode = 20261103; // 当前客户端版本代号
+    public const long CurrentVersionCode = 20261105; // 当前客户端版本代号
 
     private static readonly HttpClient s_httpClient = new()
     {

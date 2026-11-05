@@ -118,6 +118,17 @@ public static class SqliteStorageService
                 // 已存在，忽略
             }
 
+            try
+            {
+                using var alterSubTagCmd = connection.CreateCommand();
+                alterSubTagCmd.CommandText = "ALTER TABLE Subscriptions ADD COLUMN TypeTag TEXT;";
+                alterSubTagCmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // 已存在，忽略
+            }
+
             AppLogger.LogSystem("[SQLite存储] SQLite 数据库表结构初始化成功。");
         }
         catch (Exception ex)
@@ -139,7 +150,7 @@ public static class SqliteStorageService
             // 1. Load Subscriptions
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed FROM Subscriptions";
+                cmd.CommandText = "SELECT Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed, TypeTag FROM Subscriptions";
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -151,7 +162,8 @@ public static class SqliteStorageService
                         NodeCount = reader.GetInt32(3),
                         LastUpdated = reader.IsDBNull(4) ? null : DateTime.Parse(reader.GetString(4)),
                         AutoUpdate = reader.GetInt32(5) == 1,
-                        IsFixed = reader.FieldCount > 6 && !reader.IsDBNull(6) && reader.GetInt32(6) == 1
+                        IsFixed = reader.FieldCount > 6 && !reader.IsDBNull(6) && reader.GetInt32(6) == 1,
+                        TypeTag = reader.FieldCount > 7 && !reader.IsDBNull(7) ? reader.GetString(7) : "通用"
                     };
                     model.Subscriptions.Add(sub);
                 }
@@ -231,6 +243,30 @@ public static class SqliteStorageService
                 }
             }
 
+            // Ensure Auto Select Node exists at index 0 of fixedSub
+            var autoSelectNode = fixedSub.Nodes.FirstOrDefault(n => n.Id == "auto-select-node-fixed" || n.Protocol == "AUTO");
+            if (autoSelectNode == null)
+            {
+                autoSelectNode = new ServerNode
+                {
+                    Id = "auto-select-node-fixed",
+                    SubscriptionId = fixedSub.Id,
+                    Name = "⚡ 自动选择",
+                    Protocol = "AUTO",
+                    Address = "自动检测并切至最低延迟节点",
+                    Port = 0,
+                    LatencyMs = -1
+                };
+                fixedSub.Nodes.Insert(0, autoSelectNode);
+            }
+            else
+            {
+                autoSelectNode.Name = "⚡ 自动选择";
+                autoSelectNode.Protocol = "AUTO";
+                fixedSub.Nodes.Remove(autoSelectNode);
+                fixedSub.Nodes.Insert(0, autoSelectNode);
+            }
+
             // 3. Load Settings
             using (var cmd = connection.CreateCommand())
             {
@@ -288,8 +324,8 @@ public static class SqliteStorageService
                     using var cmd = connection.CreateCommand();
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"
-                        INSERT INTO Subscriptions (Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed)
-                        VALUES (@Id, @Name, @Url, @NodeCount, @LastUpdated, @AutoUpdate, @IsFixed);
+                        INSERT INTO Subscriptions (Id, Name, Url, NodeCount, LastUpdated, AutoUpdate, IsFixed, TypeTag)
+                        VALUES (@Id, @Name, @Url, @NodeCount, @LastUpdated, @AutoUpdate, @IsFixed, @TypeTag);
                     ";
                     cmd.Parameters.AddWithValue("@Id", sub.Id ?? Guid.NewGuid().ToString());
                     cmd.Parameters.AddWithValue("@Name", sub.Name ?? "");
@@ -298,6 +334,7 @@ public static class SqliteStorageService
                     cmd.Parameters.AddWithValue("@LastUpdated", sub.LastUpdated.HasValue ? sub.LastUpdated.Value.ToString("o") : (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@AutoUpdate", sub.AutoUpdate ? 1 : 0);
                     cmd.Parameters.AddWithValue("@IsFixed", (sub.IsFixed || sub.Id == "fixed-general-subscription") ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@TypeTag", sub.TypeTag ?? "通用");
                     await cmd.ExecuteNonQueryAsync();
 
                     foreach (var node in sub.Nodes)

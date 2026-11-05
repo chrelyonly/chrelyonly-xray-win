@@ -26,7 +26,7 @@ public partial class UpdateWindow : Window
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://www.chrelyonly.cn/")
+            Process.Start(new ProcessStartInfo("https://app.chrelyonly.cn/")
             {
                 UseShellExecute = true
             });

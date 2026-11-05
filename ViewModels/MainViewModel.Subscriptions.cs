@@ -24,10 +24,15 @@ public partial class MainViewModel
                 }
             }
 
-            var fetchedNodes = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url, IsUseProxyForSubUpdate);
-            AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点。");
+            var (fetchedNodes, detectedType) = await SubscriptionService.FetchSubscriptionNodesAsync(item.Url, IsUseProxyForSubUpdate);
+            AppLogger.LogSystem($"[订阅逻辑] 订阅解析完成，获取到 {fetchedNodes.Count} 个节点 (格式: {detectedType})。");
             item.NodeCount = fetchedNodes.Count > 0 ? fetchedNodes.Count : 0;
             item.LastUpdated = DateTime.Now;
+
+            if (item.TypeTag == "Auto" || string.IsNullOrWhiteSpace(item.TypeTag) || item.TypeTag == "自动")
+            {
+                item.TypeTag = detectedType;
+            }
 
             item.Nodes.Clear();
             foreach (var node in fetchedNodes)

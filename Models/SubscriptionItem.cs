@@ -13,6 +13,7 @@ public class SubscriptionItem : ViewModelBase
     private bool _autoUpdate = true;
     private bool _isUpdating = false;
     private bool _isFixed = false;
+    private string _typeTag = "通用"; // "通用", "YML", "Auto"
 
     public ObservableCollection<ServerNode> Nodes { get; } = new();
 
@@ -34,6 +35,50 @@ public class SubscriptionItem : ViewModelBase
         set => SetProperty(ref _url, value);
     }
 
+    public string TypeTag
+    {
+        get => _typeTag;
+        set
+        {
+            if (SetProperty(ref _typeTag, value))
+            {
+                OnPropertyChanged(nameof(TypeTagDisplay));
+                OnPropertyChanged(nameof(TypeTagBackground));
+                OnPropertyChanged(nameof(TypeTagForeground));
+            }
+        }
+    }
+
+    public string TypeTagDisplay
+    {
+        get
+        {
+            if (IsFixed) return "🔒 内置固定";
+            if (_typeTag == "YML" || _typeTag == "YAML") return "📄 YML订阅";
+            return "🔗 通用订阅";
+        }
+    }
+
+    public string TypeTagBackground
+    {
+        get
+        {
+            if (IsFixed) return "#DBEAFE";
+            if (_typeTag == "YML" || _typeTag == "YAML") return "#F3E8FF";
+            return "#DCFCE7";
+        }
+    }
+
+    public string TypeTagForeground
+    {
+        get
+        {
+            if (IsFixed) return "#1E40AF";
+            if (_typeTag == "YML" || _typeTag == "YAML") return "#7E22CE";
+            return "#15803D";
+        }
+    }
+
     public int NodeCount
     {
         get => _nodeCount;
@@ -43,7 +88,15 @@ public class SubscriptionItem : ViewModelBase
     public bool IsFixed
     {
         get => _isFixed;
-        set => SetProperty(ref _isFixed, value);
+        set
+        {
+            if (SetProperty(ref _isFixed, value))
+            {
+                OnPropertyChanged(nameof(TypeTagDisplay));
+                OnPropertyChanged(nameof(TypeTagBackground));
+                OnPropertyChanged(nameof(TypeTagForeground));
+            }
+        }
     }
 
     public DateTime? LastUpdated

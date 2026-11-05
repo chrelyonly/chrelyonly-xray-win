@@ -7,12 +7,26 @@ public partial class EditSubscriptionWindow : Window
     public string SubscriptionName => TxtName.Text.Trim();
     public string SubscriptionUrl => TxtUrl.Text.Trim();
 
-    public EditSubscriptionWindow(string title = "添加订阅源", string name = "", string url = "")
+    public string SubscriptionTypeTag
+    {
+        get
+        {
+            if (CmbTypeTag.SelectedIndex == 1) return "YML";
+            if (CmbTypeTag.SelectedIndex == 2) return "通用";
+            return "Auto";
+        }
+    }
+
+    public EditSubscriptionWindow(string title = "添加订阅源", string name = "", string url = "", string typeTag = "Auto")
     {
         InitializeComponent();
         TxtHeader.Text = title;
         TxtName.Text = name;
         TxtUrl.Text = url;
+
+        if (typeTag == "YML" || typeTag == "YAML") CmbTypeTag.SelectedIndex = 1;
+        else if (typeTag == "通用") CmbTypeTag.SelectedIndex = 2;
+        else CmbTypeTag.SelectedIndex = 0;
     }
 
     private void OnSaveClick(object sender, RoutedEventArgs e)

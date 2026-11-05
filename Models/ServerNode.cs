@@ -32,6 +32,8 @@ public class ServerNode : ViewModelBase
     private bool _isClaudeUnlocked = true;
     private bool _isGeminiUnlocked = true;
 
+    public bool IsAutoSelectNode => Protocol == "AUTO" || Id == "auto-select-node-fixed";
+
     public string Id
     {
         get => _id;

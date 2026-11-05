@@ -1,7 +1,7 @@
 <Window x:Class="chrelyonly_xray_win.Views.EditSubscriptionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="订阅编辑" Height="290" Width="420"
+        Title="订阅编辑" Height="350" Width="420"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -37,6 +37,13 @@
             <StackPanel Grid.Row="1">
                 <TextBlock Text="订阅备注名称" FontSize="11" FontWeight="Medium" Foreground="#374151" Margin="0,0,0,4"/>
                 <TextBox x:Name="TxtName" Padding="8,6" FontSize="12" Margin="0,0,0,10"/>
+
+                <TextBlock Text="订阅格式 / 标签" FontSize="11" FontWeight="Medium" Foreground="#374151" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CmbTypeTag" Padding="8,6" FontSize="12" Margin="0,0,0,10">
+                    <ComboBoxItem Content="⚡ 自动识别 (Auto)" IsSelected="True"/>
+                    <ComboBoxItem Content="📄 YAML / Clash 格式"/>
+                    <ComboBoxItem Content="🔗 通用 / Base64 格式"/>
+                </ComboBox>
 
                 <TextBlock Text="订阅地址 (URL)" FontSize="11" FontWeight="Medium" Foreground="#374151" Margin="0,0,0,4"/>
                 <TextBox x:Name="TxtUrl" Padding="8,6" FontSize="12"/>

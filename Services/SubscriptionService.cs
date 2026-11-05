@@ -24,13 +24,15 @@ public static class SubscriptionService
         catch { }
     }
 
-    public static async Task<List<ServerNode>> FetchSubscriptionNodesAsync(string subscriptionUrl, bool useProxy = false)
+    public static async Task<(List<ServerNode> Nodes, string DetectedType)> FetchSubscriptionNodesAsync(string subscriptionUrl, bool useProxy = false)
     {
         var result = new List<ServerNode>();
+        string detectedType = "通用";
+
         if (string.IsNullOrWhiteSpace(subscriptionUrl))
         {
             Debug.WriteLine("[订阅解析] 错误：订阅地址为空。");
-            return result;
+            return (result, detectedType);
         }
 
         try
@@ -64,10 +66,31 @@ public static class SubscriptionService
             var content = await response.Content.ReadAsStringAsync();
             Debug.WriteLine($"[订阅解析] HTTP 请求成功，获取到原始内容长度: {content.Length} 字符");
 
-            var decodedContent = TryDecodeBase64(content.Trim());
-            if (decodedContent != content.Trim())
+            var trimmedContent = content.Trim();
+
+            // 1. 检查原始 HTTP 响应内容是否为 YAML / Clash 格式
+            if (YamlSubscriptionParser.IsYamlContent(trimmedContent))
+            {
+                Debug.WriteLine("[订阅解析] 检测到原生 YAML / Clash 格式订阅内容。");
+                result = YamlSubscriptionParser.ParseYamlProxies(trimmedContent);
+                detectedType = "YML";
+                Debug.WriteLine($"[订阅解析] YAML 解析完成！成功提取到 {result.Count} 个有效节点。");
+                return (result, detectedType);
+            }
+
+            // 2. 尝试 Base64 解码并检测
+            var decodedContent = TryDecodeBase64(trimmedContent);
+            if (decodedContent != trimmedContent)
             {
                 Debug.WriteLine("[订阅解析] 成功检测并解码 Base64 订阅内容。");
+                if (YamlSubscriptionParser.IsYamlContent(decodedContent))
+                {
+                    Debug.WriteLine("[订阅解析] 解码后检测到 YAML / Clash 格式订阅内容。");
+                    result = YamlSubscriptionParser.ParseYamlProxies(decodedContent);
+                    detectedType = "YML";
+                    Debug.WriteLine($"[订阅解析] YAML 解析完成！成功提取到 {result.Count} 个有效节点。");
+                    return (result, detectedType);
+                }
             }
             else
             {
@@ -103,7 +126,7 @@ public static class SubscriptionService
             throw; // 向上抛出异常以便弹窗展示具体错误
         }
 
-        return result;
+        return (result, detectedType);
     }
 
     private static string TryDecodeBase64(string input)

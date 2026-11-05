@@ -290,13 +290,14 @@ public partial class MainWindow : Window
 
     private void ShowAddSubscriptionDialog()
     {
-        var dlg = new EditSubscriptionWindow("添加订阅源", "", "") { Owner = this };
+        var dlg = new EditSubscriptionWindow("添加订阅源", "", "", "Auto") { Owner = this };
         if (ViewModel.ShowModalDialog(dlg) == true)
         {
             var newItem = new SubscriptionItem
             {
                 Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "新订阅源" : dlg.SubscriptionName,
                 Url = dlg.SubscriptionUrl,
+                TypeTag = dlg.SubscriptionTypeTag,
                 NodeCount = 0
             };
             ViewModel.Subscriptions.Add(newItem);
@@ -315,11 +316,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dlg = new EditSubscriptionWindow("编辑订阅源", item.Name, item.Url) { Owner = this };
+        var dlg = new EditSubscriptionWindow("编辑订阅源", item.Name, item.Url, item.TypeTag) { Owner = this };
         if (ViewModel.ShowModalDialog(dlg) == true)
         {
             item.Name = string.IsNullOrWhiteSpace(dlg.SubscriptionName) ? "订阅源" : dlg.SubscriptionName;
             item.Url = dlg.SubscriptionUrl;
+            item.TypeTag = dlg.SubscriptionTypeTag;
 
             _ = ViewModel.UpdateSubscriptionItemAsync(item);
         }

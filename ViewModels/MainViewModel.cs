@@ -18,6 +18,11 @@ public partial class MainViewModel : ViewModelBase
     private bool _isTestingAiUnlock = false;
     private bool _isTestingAllNodes = false;
 
+    // Auto Select Fields
+    private int _autoSelectIntervalSeconds = 30;
+    private ServerNode? _activeAutoSelectedServer;
+    private CancellationTokenSource? _autoSelectCts;
+
     private bool _allowLan = false;
     private bool _isSystemProxyEnabled = false;
     private bool _isGlobalMode = false;
@@ -349,6 +354,32 @@ public partial class MainViewModel : ViewModelBase
     public bool IsLogsTabSelected => SelectedTabIndex == 4;
     public bool IsSettingsTabSelected => SelectedTabIndex == 5;
 
+    public int AutoSelectIntervalSeconds
+    {
+        get => _autoSelectIntervalSeconds;
+        set
+        {
+            if (SetProperty(ref _autoSelectIntervalSeconds, value))
+            {
+                OnPropertyChanged(nameof(AutoSelectIntervalText));
+                AppLogger.LogSystem($"[自动选择] 检测间隔已更改为: {value} 秒");
+                if (!_isInitializing) SaveState();
+            }
+        }
+    }
+
+    public string AutoSelectIntervalText
+    {
+        get => _autoSelectIntervalSeconds.ToString();
+        set
+        {
+            if (int.TryParse(value, out int parsed) && parsed >= 5)
+            {
+                AutoSelectIntervalSeconds = parsed;
+            }
+        }
+    }
+
     public ServerNode? SelectedServer
     {
         get => _selectedServer;
@@ -356,7 +387,19 @@ public partial class MainViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedServer, value))
             {
-                SaveState();
+                if (value != null && value.IsAutoSelectNode)
+                {
+                    StartAutoSelectLoop();
+                }
+                else
+                {
+                    StopAutoSelectLoop();
+                }
+
+                if (!_isInitializing)
+                {
+                    SaveState();
+                }
             }
         }
     }
@@ -459,15 +502,21 @@ public partial class MainViewModel : ViewModelBase
                 if (value != null)
                 {
                     Servers.Clear();
+                    var autoNode = GetOrCreateAutoSelectNode();
+                    Servers.Add(autoNode);
+
                     foreach (var node in value.Nodes)
                     {
-                        Servers.Add(node);
+                        if (!node.IsAutoSelectNode)
+                        {
+                            Servers.Add(node);
+                        }
                     }
                     AppLogger.LogSystem($"[订阅逻辑] 切换订阅源 -> {value.Name}，已加载 {value.Nodes.Count} 个节点。");
 
                     if (SelectedServer == null || !Servers.Contains(SelectedServer))
                     {
-                        SelectedServer = Servers.FirstOrDefault();
+                        SelectedServer = autoNode;
                     }
                 }
                 SaveState();
@@ -551,19 +600,57 @@ public partial class MainViewModel : ViewModelBase
             Subscriptions.Add(sub);
         }
 
-        if (Subscriptions.Count > 0)
-        {
-            _selectedSubscription = Subscriptions[0];
-            Servers.Clear();
-            foreach (var node in _selectedSubscription.Nodes)
-            {
-                Servers.Add(node);
-            }
-        }
-
+        // Find the subscription that owns the saved SelectedServerId, or fallback to saved SelectedSubscriptionId
+        SubscriptionItem? targetSub = null;
         if (!string.IsNullOrEmpty(savedData.SelectedServerId))
         {
-            SelectedServer = Servers.FirstOrDefault(s => s.Id == savedData.SelectedServerId);
+            targetSub = Subscriptions.FirstOrDefault(sub => sub.Nodes.Any(n => n.Id == savedData.SelectedServerId));
+        }
+
+        if (targetSub == null && savedData.Settings.TryGetValue("SelectedSubscriptionId", out string? savedSubId) && !string.IsNullOrEmpty(savedSubId))
+        {
+            targetSub = Subscriptions.FirstOrDefault(sub => sub.Id == savedSubId);
+        }
+
+        if (targetSub == null && Subscriptions.Count > 0)
+        {
+            targetSub = Subscriptions[0];
+        }
+
+        if (savedData.Settings.TryGetValue("AutoSelectIntervalSeconds", out string? autoIntStr) && int.TryParse(autoIntStr, out int savedAutoInt) && savedAutoInt >= 5)
+        {
+            _autoSelectIntervalSeconds = savedAutoInt;
+        }
+
+        if (targetSub != null)
+        {
+            _selectedSubscription = targetSub;
+            Servers.Clear();
+            var autoNode = GetOrCreateAutoSelectNode();
+            Servers.Add(autoNode);
+
+            foreach (var node in targetSub.Nodes)
+            {
+                if (!node.IsAutoSelectNode)
+                {
+                    Servers.Add(node);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(savedData.SelectedServerId))
+            {
+                _selectedServer = Servers.FirstOrDefault(s => s.Id == savedData.SelectedServerId);
+            }
+
+            if (_selectedServer == null)
+            {
+                _selectedServer = autoNode;
+            }
+
+            if (_selectedServer.IsAutoSelectNode)
+            {
+                StartAutoSelectLoop();
+            }
         }
 
         // Restore Settings from persistence
@@ -901,8 +988,12 @@ public partial class MainViewModel : ViewModelBase
 
     public void SaveState()
     {
+        if (_isInitializing) return;
+
         var extra = new Dictionary<string, string>
         {
+            ["SelectedSubscriptionId"] = SelectedSubscription?.Id ?? "",
+            ["AutoSelectIntervalSeconds"] = AutoSelectIntervalSeconds.ToString(),
             ["AllowLan"] = AllowLan.ToString(),
             ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
             ["IsGlobalMode"] = IsGlobalMode.ToString(),
@@ -915,6 +1006,99 @@ public partial class MainViewModel : ViewModelBase
             ["WindowHeight"] = SavedWindowHeight.ToString("F0")
         };
         _ = SqliteStorageService.SaveAsync(Subscriptions, Servers, SelectedServer?.Id, extra);
+    }
+
+    private ServerNode GetOrCreateAutoSelectNode()
+    {
+        return new ServerNode
+        {
+            Id = "auto-select-node-fixed",
+            Name = "⚡ 自动选择",
+            Protocol = "AUTO",
+            Address = "自动检测并切至最低延迟节点",
+            Port = 0,
+            LatencyMs = -1
+        };
+    }
+
+    private void StartAutoSelectLoop()
+    {
+        StopAutoSelectLoop();
+        _autoSelectCts = new CancellationTokenSource();
+        var token = _autoSelectCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            AppLogger.LogSystem($"[自动选择] 已启动节点自动选择检测 (检测间隔: {AutoSelectIntervalSeconds} 秒)");
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await PerformAutoSelectCheckAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[自动选择] 检测发生异常: {ex.Message}");
+                }
+
+                try
+                {
+                    await Task.Delay(AutoSelectIntervalSeconds * 1000, token);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
+            }
+            AppLogger.LogSystem("[自动选择] 已停止节点自动选择检测。");
+        }, token);
+    }
+
+    private void StopAutoSelectLoop()
+    {
+        _autoSelectCts?.Cancel();
+        _autoSelectCts = null;
+    }
+
+    public async Task PerformAutoSelectCheckAsync()
+    {
+        var realNodes = Servers.Where(n => !n.IsAutoSelectNode).ToList();
+        if (realNodes.Count == 0) return;
+
+        var tasks = realNodes.Select(node => TestSingleNodeLatencyAsync(node)).ToArray();
+        await Task.WhenAll(tasks);
+
+        var bestNode = realNodes
+            .Where(n => n.LatencyMs > 0 && n.LatencyMs < 9999)
+            .OrderBy(n => n.LatencyMs)
+            .FirstOrDefault();
+
+        if (bestNode == null)
+        {
+            bestNode = realNodes.FirstOrDefault();
+        }
+
+        if (bestNode != null)
+        {
+            bool changed = _activeAutoSelectedServer != bestNode;
+            _activeAutoSelectedServer = bestNode;
+
+            var autoNode = Servers.FirstOrDefault(n => n.IsAutoSelectNode);
+            if (autoNode != null)
+            {
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    autoNode.Address = $"当前最优: {bestNode.Name} ({bestNode.LatencyDisplay})";
+                    autoNode.LatencyMs = bestNode.LatencyMs;
+                });
+            }
+
+            if (changed && IsConnected)
+            {
+                AppLogger.LogSystem($"[自动选择] 最优节点更新为: {bestNode.Name} ({bestNode.Address}:{bestNode.Port}, 延迟: {bestNode.LatencyDisplay})");
+                ReapplyXrayConfigIfConnected(bestNode);
+            }
+        }
     }
 
     public void StopXrayCore()
