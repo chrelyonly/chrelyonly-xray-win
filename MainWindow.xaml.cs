@@ -153,8 +153,8 @@ public partial class MainWindow : Window
             }
             else if (args.PropertyName == nameof(ViewModel.IsXrayRunning))
             {
-                string msg = ViewModel.IsXrayRunning ? "莓莓小助手启动喵~🐱" : "再见了喵~🐱";
-                ShowTrayNotification("Xray 内核提示", msg);
+                string msg = ViewModel.IsXrayRunning ? "节点变化中~🐱" : "再见了喵~🐱";
+                ShowTrayNotification("莓莓修仙提醒喵", msg);
             }
         };
     }
