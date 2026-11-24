@@ -30,7 +30,7 @@ public partial class MainViewModel
             srv = GetEffectiveServerForAutoSelect();
             if (srv == null) return "";
         }
-        return _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, CustomProxyRules, CustomDirectRules);
+        return _xrayManager.GenerateClientConfig(srv, AllowLan, IsGlobalMode, IsTunEnabled, CustomProxyRules, CustomDirectRules);
     }
 
     private void ReapplyXrayConfigIfConnected(ServerNode? targetNode = null)
@@ -73,7 +73,7 @@ public partial class MainViewModel
                 var srv = SelectedServer;
 
                 IsConnected = true;
-                IsSystemProxyEnabled = true;
+                IsSystemProxyEnabled = !IsTunEnabled;
                 foreach (var node in Servers)
                 {
                     node.IsConnected = false;

@@ -10,6 +10,7 @@ public static class XrayConfigBuilder
         ServerNode node,
         bool allowLan = false,
         bool isGlobalMode = false,
+        bool isTunEnabled = false,
         string customProxyRules = "",
         string customDirectRules = "",
         string configPath = "")
@@ -18,19 +19,20 @@ public static class XrayConfigBuilder
         {
             string listenAddress = allowLan ? "0.0.0.0" : "127.0.0.1";
             string modeText = isGlobalMode ? "全局代理" : "智能分流";
+            string tunText = isTunEnabled ? "TUN模式开启" : "TUN模式关闭";
 
             AppLogger.LogSystem(
                 $"[XRAY核心] 正在为节点「{node.Name}」" +
                 $"({node.Address}:{node.Port}, 协议: {node.Protocol}, " +
-                $"监听: {listenAddress}, 模式: {modeText}) 生成客户端配置...");
+                $"监听: {listenAddress}, 模式: {modeText}, {tunText}) 生成客户端配置...");
 
             var root = new JsonObject
             {
                 ["log"] = BuildLog(),
                 ["dns"] = BuildDns(),
-                ["inbounds"] = BuildInbounds(listenAddress),
+                ["inbounds"] = BuildInbounds(listenAddress, isTunEnabled),
                 ["outbounds"] = BuildOutbounds(node),
-                ["routing"] = BuildRouting(isGlobalMode, customProxyRules, customDirectRules)
+                ["routing"] = BuildRouting(isGlobalMode, isTunEnabled, customProxyRules, customDirectRules)
             };
 
             string configJson = root.ToJsonString(new JsonSerializerOptions
@@ -194,7 +196,7 @@ public static class XrayConfigBuilder
         return JsonObject.Parse(json)!.AsObject();
     }
 
-    private static JsonArray BuildInbounds(string listenAddress)
+    private static JsonArray BuildInbounds(string listenAddress, bool isTunEnabled)
     {
         JsonArray res = JsonNode.Parse($$"""
                                          [
@@ -222,41 +224,30 @@ public static class XrayConfigBuilder
                                          ]
                                          """)!.AsArray();
 
-        if ("判断是否开启了tun代理")
+        if (isTunEnabled)
         {
-         // 如果开启了那么则追加
-         // {
-         //     "tag": "tun",
-         //     "protocol": "tun",
-         //     "sniffing": {
-         //         "enabled": true,
-         //         "destOverride": [
-         //         "http",
-         //         "tls",
-         //         "quic",
-         //         "fakedns"
-         //             ],
-         //         "routeOnly": true
-         //     },
-         //     "settings": {
-         //         "name": "xray_tun",
-         //         "MTU": 9000,
-         //         "gateway": [
-         //         "10.0.0.1/30"
-         //             ],
-         //         "autoSystemRoutingTable": [
-         //         "0.0.0.0/0"
-         //             ],
-         //         "autoOutboundsInterface": "auto",
-         //         "dns": [
-         //         "1.1.1.1",
-         //         "8.8.8.8"
-         //             ],
-         //         "autoSystemWfpBlockLeak": [
-         //         "dns",
-         //         "misconfigtun"
-         //             ]
-         //     }
+             res.Add(new JsonObject
+             {
+                 ["tag"] = "tun",
+                 ["protocol"] = "tun",
+                 ["sniffing"] = new JsonObject
+                 {
+                     ["enabled"] = true,
+                     ["destOverride"] = new JsonArray { "http", "tls", "quic", "fakedns" },
+                     ["routeOnly"] = true
+                 },
+                 ["settings"] = new JsonObject
+                 {
+                     ["name"] = "strawberryTun",
+                     ["desc"] = "莓莓提供tun管理",
+                     ["mtu"] = 9000,
+                     ["gateway"] = new JsonArray { "10.0.0.1/30" },
+                     ["autoSystemRoutingTable"] = new JsonArray { "0.0.0.0/0" },
+                     ["autoOutboundsInterface"] = "auto",
+                     ["dns"] = new JsonArray { "223.5.5.5", "223.6.6.6" },
+                     ["autoSystemWfpBlockLeak"] = new JsonArray { "dns", "misconfigtun" }
+                 }
+             });
         }
         return res;
     }
@@ -433,22 +424,26 @@ public static class XrayConfigBuilder
             ["tag"] = "block",
             ["protocol"] = "blackhole",
         });
+        outbounds.Add(new JsonObject
+        {
+            ["tag"] = "dns",
+            ["protocol"] = "dns",
+        });
 
         return outbounds;
     }
 
-    private static JsonObject BuildRouting(bool isGlobalMode, string customProxyRules = "", string customDirectRules = "")
+    private static JsonObject BuildRouting(bool isGlobalMode, bool isTunEnabled, string customProxyRules = "", string customDirectRules = "")
     {
         var rulesArray = new JsonArray();
 
-        if ("判断是否开启了tun代理")
+        if (isTunEnabled)
         {
-         // 如果开启了tun
-         
              rulesArray.Add(new JsonObject
              {
+                 ["type"] = "field",
                  ["port"] = "53",
-                 ["inboundTag"] = new JsonArray { "tun" }
+                 ["inboundTag"] = new JsonArray { "tun" },
                  ["outboundTag"] = "dns"
              });
         }

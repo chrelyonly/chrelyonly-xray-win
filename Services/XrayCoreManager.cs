@@ -62,10 +62,11 @@ public class XrayCoreManager
         ServerNode node,
         bool allowLan = false,
         bool isGlobalMode = false,
+        bool isTunEnabled = false,
         string customProxyRules = "",
         string customDirectRules = "")
     {
-        return XrayConfigBuilder.GenerateClientConfig(node, allowLan, isGlobalMode, customProxyRules, customDirectRules, ConfigPath);
+        return XrayConfigBuilder.GenerateClientConfig(node, allowLan, isGlobalMode, isTunEnabled, customProxyRules, customDirectRules, ConfigPath);
     }
 
     public bool StartCore(string configJson)
@@ -99,7 +100,9 @@ public class XrayCoreManager
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true
+                RedirectStandardError = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
             };
 
             _xrayProcess = Process.Start(startInfo);

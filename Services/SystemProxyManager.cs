@@ -172,4 +172,40 @@ public static class SystemProxyManager
         }
         return false;
     }
+
+    public static bool IsRunAsAdmin()
+    {
+        try
+        {
+            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static void RestartAsAdmin()
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrEmpty(exePath)) return;
+
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true,
+                Verb = "runas"
+            };
+            System.Diagnostics.Process.Start(startInfo);
+            System.Windows.Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogSystem($"[管理员权限] 提权启动失败: {ex.Message}");
+        }
+    }
 }

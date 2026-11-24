@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using System.Windows.Media;
 using chrelyonly_xray_win.Models;
 using chrelyonly_xray_win.Services;
@@ -493,6 +494,64 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    private bool _isTunEnabled = false;
+    public bool IsTunEnabled
+    {
+        get => _isTunEnabled;
+        set
+        {
+            if (value && !SystemProxyManager.IsRunAsAdmin())
+            {
+                bool? confirmed = ShowModalDialog(new Views.ConfirmWindow("管理员权限提示", "TUN 虚拟网卡模式必须以管理员身份运行。\n是否立即以管理员身份重启应用程序？"));
+                if (confirmed == true)
+                {
+                    SystemProxyManager.RestartAsAdmin();
+                }
+                OnPropertyChanged(nameof(IsTunEnabled));
+                OnPropertyChanged(nameof(IsSystemProxyMode));
+                return;
+            }
+
+            if (SetProperty(ref _isTunEnabled, value))
+            {
+                OnPropertyChanged(nameof(IsSystemProxyMode));
+                SaveState();
+                AppLogger.LogSystem($"[TUN代理] TUN 代理模式开关已更改为: {value}");
+
+                if (value && IsSystemProxyEnabled)
+                {
+                    IsSystemProxyEnabled = false;
+                }
+
+                if (IsConnected)
+                {
+                    AppLogger.LogSystem("[TUN代理] TUN 代理模式变更，正在重新应用 Xray 配置...");
+                    ReapplyXrayConfigIfConnected();
+                }
+            }
+        }
+    }
+
+    public bool IsSystemProxyMode
+    {
+        get => !IsTunEnabled;
+        set => IsTunEnabled = !value;
+    }
+
+    public bool IsRunningAsAdmin
+    {
+        get => SystemProxyManager.IsRunAsAdmin();
+        set
+        {
+            if (value && !SystemProxyManager.IsRunAsAdmin())
+            {
+                AppLogger.LogSystem("[管理员权限] 用户请求以管理员身份运行...");
+                SystemProxyManager.RestartAsAdmin();
+            }
+            OnPropertyChanged(nameof(IsRunningAsAdmin));
+        }
+    }
+
     private bool _isNotificationsEnabled = true;
     public bool IsNotificationsEnabled
     {
@@ -696,6 +755,10 @@ public partial class MainViewModel : ViewModelBase
         if (savedData.Settings.TryGetValue("IsUseProxyForSubUpdate", out string? useProxyStr) && bool.TryParse(useProxyStr, out bool savedUseProxy))
         {
             _isUseProxyForSubUpdate = savedUseProxy;
+        }
+        if (savedData.Settings.TryGetValue("IsTunEnabled", out string? tunStr) && bool.TryParse(tunStr, out bool savedTun))
+        {
+            _isTunEnabled = savedTun;
         }
         if (savedData.Settings.TryGetValue("IsNotificationsEnabled", out string? notifStr) && bool.TryParse(notifStr, out bool savedNotif))
         {
@@ -1026,6 +1089,7 @@ public partial class MainViewModel : ViewModelBase
             ["IsSystemProxyEnabled"] = IsSystemProxyEnabled.ToString(),
             ["IsGlobalMode"] = IsGlobalMode.ToString(),
             ["IsUseProxyForSubUpdate"] = IsUseProxyForSubUpdate.ToString(),
+            ["IsTunEnabled"] = IsTunEnabled.ToString(),
             ["IsNotificationsEnabled"] = IsNotificationsEnabled.ToString(),
             ["CustomProxyRules"] = CustomProxyRules,
             ["CustomDirectRules"] = CustomDirectRules,
