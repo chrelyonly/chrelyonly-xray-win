@@ -196,31 +196,69 @@ public static class XrayConfigBuilder
 
     private static JsonArray BuildInbounds(string listenAddress)
     {
-        return JsonNode.Parse($$"""
-                              [
-                                  {
-                                 "tag": "socks",
-                                 "port": 10909,
-                                 "listen": "{{listenAddress}}",
-                                 "protocol": "mixed",
-                                 "sniffing": {
-                                   "enabled": true,
-                                   "destOverride": [
-                                     "http",
-                                     "tls",
-                                     "quic",
-                                     "fakedns"
-                                   ],
-                                   "routeOnly": true
-                                 },
-                                 "settings": {
-                                   "auth": "noauth",
-                                   "udp": true,
-                                   "allowTransparent": false
-                                 }
-                               }
-                              ]
-                              """)!.AsArray();
+        JsonArray res = JsonNode.Parse($$"""
+                                         [
+                                             {
+                                            "tag": "socks",
+                                            "port": 10909,
+                                            "listen": "{{listenAddress}}",
+                                            "protocol": "mixed",
+                                            "sniffing": {
+                                              "enabled": true,
+                                              "destOverride": [
+                                                "http",
+                                                "tls",
+                                                "quic",
+                                                "fakedns"
+                                              ],
+                                              "routeOnly": true
+                                            },
+                                            "settings": {
+                                              "auth": "noauth",
+                                              "udp": true,
+                                              "allowTransparent": false
+                                            }
+                                          }
+                                         ]
+                                         """)!.AsArray();
+
+        if ("判断是否开启了tun代理")
+        {
+         // 如果开启了那么则追加
+         // {
+         //     "tag": "tun",
+         //     "protocol": "tun",
+         //     "sniffing": {
+         //         "enabled": true,
+         //         "destOverride": [
+         //         "http",
+         //         "tls",
+         //         "quic",
+         //         "fakedns"
+         //             ],
+         //         "routeOnly": true
+         //     },
+         //     "settings": {
+         //         "name": "xray_tun",
+         //         "MTU": 9000,
+         //         "gateway": [
+         //         "10.0.0.1/30"
+         //             ],
+         //         "autoSystemRoutingTable": [
+         //         "0.0.0.0/0"
+         //             ],
+         //         "autoOutboundsInterface": "auto",
+         //         "dns": [
+         //         "1.1.1.1",
+         //         "8.8.8.8"
+         //             ],
+         //         "autoSystemWfpBlockLeak": [
+         //         "dns",
+         //         "misconfigtun"
+         //             ]
+         //     }
+        }
+        return res;
     }
 
     private static JsonArray BuildOutbounds(ServerNode node)
@@ -403,6 +441,17 @@ public static class XrayConfigBuilder
     {
         var rulesArray = new JsonArray();
 
+        if ("判断是否开启了tun代理")
+        {
+         // 如果开启了tun
+         
+             rulesArray.Add(new JsonObject
+             {
+                 ["port"] = "53",
+                 ["inboundTag"] = new JsonArray { "tun" }
+                 ["outboundTag"] = "dns"
+             });
+        }
         rulesArray.Add(new JsonObject
         {
             ["type"] = "field",
