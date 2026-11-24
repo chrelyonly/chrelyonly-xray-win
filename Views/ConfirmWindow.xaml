@@ -50,7 +50,7 @@
                         Padding="14,6" FontSize="12" FontWeight="Medium"
                         Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
 
-                <Button Content="确认删除" Click="OnConfirmClick"
+                <Button Content="确认" Click="OnConfirmClick"
                         Padding="14,6" FontSize="12" FontWeight="Bold"
                         Background="#EF4444" Foreground="#FFFFFF"
                         Style="{StaticResource ModernButtonStyle}"/>

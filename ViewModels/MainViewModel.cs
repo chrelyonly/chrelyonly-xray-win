@@ -516,16 +516,20 @@ public partial class MainViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsSystemProxyMode));
                 SaveState();
-                AppLogger.LogSystem($"[TUN代理] TUN 代理模式开关已更改为: {value}");
+                AppLogger.LogSystem($"[代理模式] 代理模式已切换为: {(value ? "TUN虚拟网卡模式" : "系统代理模式")}");
 
-                if (value && IsSystemProxyEnabled)
+                if (value)
                 {
                     IsSystemProxyEnabled = false;
+                }
+                else if (IsConnected)
+                {
+                    IsSystemProxyEnabled = true;
                 }
 
                 if (IsConnected)
                 {
-                    AppLogger.LogSystem("[TUN代理] TUN 代理模式变更，正在重新应用 Xray 配置...");
+                    AppLogger.LogSystem("[代理模式] 代理模式变更，正在重新应用 Xray 配置...");
                     ReapplyXrayConfigIfConnected();
                 }
             }

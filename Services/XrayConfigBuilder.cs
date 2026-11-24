@@ -241,7 +241,7 @@ public static class XrayConfigBuilder
                      ["name"] = "strawberryTun",
                      ["desc"] = "莓莓提供tun管理",
                      ["mtu"] = 9000,
-                     ["gateway"] = new JsonArray { "10.0.0.1/30" },
+                     ["gateway"] = new JsonArray { "20.0.0.1/30"},
                      ["autoSystemRoutingTable"] = new JsonArray { "0.0.0.0/0" },
                      ["autoOutboundsInterface"] = "auto",
                      ["dns"] = new JsonArray { "223.5.5.5", "223.6.6.6" },
